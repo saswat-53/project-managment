@@ -246,14 +246,21 @@ if (project) {
 ### Critical Fixes Required:
 1. ✅ **FIXED** - Add cascade delete for projects when workspace is deleted
 2. ✅ **FIXED** - Add cascade delete for tasks when project is deleted
+3. ✅ **FIXED** - Add project membership validation in task controller
+4. ✅ **FIXED** - Add user existence validation in workspace create
+5. ✅ **FIXED** - Add workspace member validation in project create
+6. ✅ **FIXED** - Add project member validation for task assignedTo field
 
-### Medium Priority Improvements:
-3. ⚠️ Add consistent user existence validation in project and task controllers (OPTIONAL)
+### Complete Validation Hierarchy:
+- ✅ Workspace → Validates users exist in User collection
+- ✅ Project → Validates users are workspace members
+- ✅ Task → Validates users are project members
+- ✅ Task AssignedTo → Validates user is project member (inherently workspace member)
 
 ### Working Correctly:
-4. ✅ User-workspace bidirectional relationships
-5. ✅ Workspace-project bidirectional relationships
-6. ✅ Project-task bidirectional relationships
+7. ✅ User-workspace bidirectional relationships
+8. ✅ Workspace-project bidirectional relationships
+9. ✅ Project-task bidirectional relationships
 
 ---
 
@@ -286,14 +293,210 @@ if (project) {
 
 ---
 
+### Fix 3: Task Controller Project Membership Validation ✅
+**File**: `backend/controllers/task.controller.ts`
+**Changes**:
+- Modified all task operations to check BOTH workspace membership AND project membership
+- Functions updated: `createTask`, `getTasksByProject`, `updateTask`, `deleteTask`
+- Added `.populate("project")` where needed to access project members
+
+**Before**:
+```typescript
+// Only checked workspace membership
+const isMember = workspace.members
+  .map((id: any) => id.toString())
+  .includes(userId.toString());
+
+if (!isMember) {
+  return res.status(403).json({ message: "Not authorized" });
+}
+// ❌ Missing project membership check!
+```
+
+**After**:
+```typescript
+// Check workspace membership
+const isMember = workspace.members
+  .map((id: any) => id.toString())
+  .includes(userId.toString());
+
+if (!isMember) {
+  return res.status(403).json({ message: "Not authorized" });
+}
+
+// ✅ Check project membership
+const isProjectMember = project.members
+  .map((id: any) => id.toString())
+  .includes(userId.toString());
+
+if (!isProjectMember) {
+  return res.status(403).json({
+    message: "Not authorized. You must be a project member to [action] tasks.",
+  });
+}
+```
+
+**Benefits**:
+- ✅ Users can only create/view/update/delete tasks in projects they're members of
+- ✅ Workspace members can't access other projects' tasks within the same workspace
+- ✅ Better security and access control
+- ✅ Follows the hierarchical permission model correctly
+
+---
+
+### Fix 4: Workspace Create - User Validation ✅
+**File**: `backend/controllers/workspace.controller.ts`
+**Function**: `createWorkspace` (lines 77-92)
+
+**Changes**:
+- Now validates that all provided user IDs exist in User collection during workspace creation
+- Returns clear error message with invalid user IDs instead of silently ignoring them
+
+**Before**:
+```typescript
+// Validate members exist in DB
+let finalMembers: string[] = [];
+if (Array.isArray(members) && members.length > 0) {
+  const users = await User.find({ _id: { $in: members } }).select("_id");
+
+  finalMembers = users.map(u => u._id.toString());
+  // ❌ Silently ignores invalid IDs - no error returned
+}
+```
+
+**After**:
+```typescript
+// Validate members exist in DB
+let finalMembers: string[] = [];
+if (Array.isArray(members) && members.length > 0) {
+  const users = await User.find({ _id: { $in: members } }).select("_id");
+  const validIds = users.map(u => u._id.toString());
+
+  // ✅ Check if any provided member IDs don't exist
+  const invalidMembers = members.filter(id => !validIds.includes(id));
+  if (invalidMembers.length > 0) {
+    return res.status(400).json({
+      message: `Invalid user IDs: ${invalidMembers.join(", ")}. These users do not exist.`
+    });
+  }
+
+  finalMembers = validIds;
+}
+```
+
+---
+
+### Fix 5: Project Create - Workspace Member Validation ✅
+**File**: `backend/controllers/project.controller.ts`
+**Function**: `createProject` (lines 81-96)
+
+**Changes**:
+- Now validates that all provided user IDs are workspace members during project creation
+- Returns clear error message with invalid user IDs instead of silently filtering them out
+
+**Before**:
+```typescript
+const memberSet = new Set<string>([userId.toString(), ...(members || [])]);
+const workspaceMemberIds = workspace.members.map((id) => id.toString());
+
+// ❌ Silently filters out non-workspace members
+const validMembers = Array.from(memberSet).filter((id) =>
+  workspaceMemberIds.includes(id)
+);
+```
+
+**After**:
+```typescript
+const memberSet = new Set<string>([userId.toString(), ...(members || [])]);
+const workspaceMemberIds = workspace.members.map((id) => id.toString());
+
+// ✅ Check if any provided member is not in the workspace
+const providedMembers = Array.from(memberSet);
+const invalidMembers = providedMembers.filter(
+  (memberId: string) => !workspaceMemberIds.includes(memberId)
+);
+
+if (invalidMembers.length > 0) {
+  return res.status(400).json({
+    message: `Invalid user IDs: ${invalidMembers.join(", ")}. These users are not members of the workspace.`
+  });
+}
+
+const validMembers = providedMembers;
+```
+
+---
+
+### Fix 6: Task AssignedTo - Project Member Validation ✅
+**File**: `backend/controllers/task.controller.ts`
+**Functions**: `createTask` (lines 92-108), `updateTask` (lines 307-321)
+
+**Changes**:
+- Now validates that `assignedTo` user is a project member
+- No need to check workspace membership since project members are already validated to be workspace members
+- More efficient - single check instead of redundant double check
+
+**Before**:
+```typescript
+// Only checked workspace membership
+if (assignedTo) {
+  const isValidAssignee = workspace.members
+    .map((id: any) => id.toString())
+    .includes(assignedTo);
+
+  if (!isValidAssignee) {
+    return res.status(400).json({
+      message: "Assigned user must be workspace member",
+    });
+  }
+
+  assignedUserId = new mongoose.Types.ObjectId(assignedTo);
+}
+// ❌ Missing project membership check for assignedTo!
+```
+
+**After**:
+```typescript
+// Check project membership only (project members are already workspace members)
+if (assignedTo) {
+  // Check if assignedTo user is a project member
+  // Note: Project members are already validated to be workspace members
+  const isProjectMemberAssignee = project.members
+    .map((id: any) => id.toString())
+    .includes(assignedTo);
+
+  if (!isProjectMemberAssignee) {
+    return res.status(400).json({
+      message: "Assigned user must be a project member",
+    });
+  }
+
+  assignedUserId = new mongoose.Types.ObjectId(assignedTo);
+}
+```
+
+**Benefits**:
+- ✅ Users can only be assigned to tasks in projects they're members of
+- ✅ Prevents assigning workspace members to tasks in projects they don't belong to
+- ✅ More efficient - single validation instead of redundant double check
+- ✅ Leverages hierarchical validation (project validation ensures workspace membership)
+- ✅ Clear error messages for invalid assignments
+
+---
+
 ## 🛠️ IMPLEMENTATION PRIORITY
 
 ### Phase 1 (CRITICAL - ✅ COMPLETED):
 - ✅ Fix workspace deletion cascade
 - ✅ Fix project deletion cascade
+- ✅ Fix task controller project membership validation
+- ✅ Fix workspace create user validation
+- ✅ Fix project create workspace member validation
+- ✅ Fix task assignedTo project member validation
 
-### Phase 2 (MEDIUM - OPTIONAL):
-- ⚠️ Add consistent member validation across all controllers (low priority since workspace already validates)
+### Phase 2 (MEDIUM - ✅ COMPLETED):
+- ✅ Add consistent member validation across all controllers (CREATE and UPDATE operations)
+- ✅ Add consistent assignedTo validation for task operations
 
 ### Phase 3 (OPTIONAL - Best Practice):
 - Consider using MongoDB middleware (pre/post hooks) for cascade deletion

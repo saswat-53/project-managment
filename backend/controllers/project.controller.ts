@@ -31,7 +31,7 @@ import {
  *
  * Response:
  * - 201: Project created successfully with project object
- * - 400: Validation error (name or workspaceId missing, invalid format)
+ * - 400: Validation error (name or workspaceId missing, invalid format, or non-workspace members)
  * - 403: Not authorized (user not a workspace member)
  * - 404: Workspace not found
  * - 500: Internal server error
@@ -42,7 +42,7 @@ import {
  * - Verifies user is a workspace member before allowing project creation
  * - Creator automatically added as project member (cannot be excluded)
  * - Only workspace members can be added as project members
- * - Non-workspace members are filtered out silently
+ * - Returns error if any provided user is not a workspace member
  * - Duplicates prevented using Set
  * - Project automatically added to workspace.projects array
  */
@@ -79,12 +79,21 @@ export const createProject = async (req: Request, res: Response) => {
     }
 
     const memberSet = new Set<string>([userId.toString(), ...(members || [])]);
-    // Validate project members (must be workspace members)
-    // Filter out any users who are not workspace members
     const workspaceMemberIds = workspace.members.map((id) => id.toString());
-    const validMembers = Array.from(memberSet).filter((id) =>
-      workspaceMemberIds.includes(id)
+
+    // Check if any provided member is not in the workspace
+    const providedMembers = Array.from(memberSet);
+    const invalidMembers = providedMembers.filter(
+      (memberId: string) => !workspaceMemberIds.includes(memberId)
     );
+
+    if (invalidMembers.length > 0) {
+      return res.status(400).json({
+        message: `Invalid user IDs: ${invalidMembers.join(", ")}. These users are not members of the workspace.`
+      });
+    }
+
+    const validMembers = providedMembers;
 
     // Convert to MongoDB ObjectIds
     const memberObjectIds = validMembers.map(
@@ -258,7 +267,7 @@ export const getProjectById = async (req: Request, res: Response) => {
  *
  * Response:
  * - 200: Project updated successfully with updated project object
- * - 400: Validation error (invalid ID or body format)
+ * - 400: Validation error (invalid ID, body format, or non-workspace members)
  * - 403: Not authorized (user not a workspace member)
  * - 404: Project not found
  * - 500: Internal server error
@@ -268,7 +277,10 @@ export const getProjectById = async (req: Request, res: Response) => {
  * - Verifies project and workspace exist
  * - Checks user is a workspace member before allowing updates
  * - Only workspace members can be added as project members
- * - Non-workspace members are filtered out silently
+ * - Returns error if any provided user is not a workspace member
+ * - Members array REPLACES existing members (not additive)
+ * - CASCADE: When members are removed from project, they are automatically:
+ *   - Unassigned from all tasks in the project
  */
 export const updateProject = async (req: Request, res: Response) => {
   try {
@@ -321,24 +333,43 @@ export const updateProject = async (req: Request, res: Response) => {
         id.toString()
       );
 
-      // Always include:
-      // - project creator (first member)
-      // - current updater user
-      const baseMembers = new Set<string>([
-        ...project.members.map((id) => id.toString()),
-        userId.toString(),
-      ]);
+      // Check if any provided member is not in the workspace
+      const invalidMembers = members.filter(
+        (memberId: string) => !workspaceMemberIds.includes(memberId)
+      );
 
-      // Add requested members (only if they belong to workspace)
-      members.forEach((m: string) => {
-        if (workspaceMemberIds.includes(m)) {
-          baseMembers.add(m);
-        }
-      });
+      if (invalidMembers.length > 0) {
+        return res.status(400).json({
+          message: `Invalid user IDs: ${invalidMembers.join(", ")}. These users are not members of the workspace.`
+        });
+      }
 
-      project.members = Array.from(baseMembers).map(
+      // Store old members before update
+      const oldMemberIds = project.members.map((id) => id.toString());
+
+      // Build new member list (replacing, not adding)
+      const newMemberSet = new Set<string>(members);
+      const newMemberIds = Array.from(newMemberSet);
+
+      project.members = newMemberIds.map(
         (id) => new mongoose.Types.ObjectId(id)
       );
+
+      // Find members that were removed from the project
+      const membersToRemove = oldMemberIds.filter(id => !newMemberIds.includes(id));
+
+      // CASCADE: Unassign removed members from tasks in this project
+      if (membersToRemove.length > 0) {
+        // Convert string IDs to ObjectIds for MongoDB comparison
+        const memberObjectIdsToRemove = membersToRemove.map(
+          id => new mongoose.Types.ObjectId(id)
+        );
+
+        await Task.updateMany(
+          { project: project._id, assignedTo: { $in: memberObjectIdsToRemove } },
+          { $unset: { assignedTo: "" } }
+        );
+      }
     }
 
     await project.save();

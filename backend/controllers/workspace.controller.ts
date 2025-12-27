@@ -30,7 +30,7 @@ import mongoose from "mongoose";
  *
  * Response:
  * - 201: Workspace created successfully with workspace object
- * - 400: Validation error (name required, duplicate name, or invalid format)
+ * - 400: Validation error (name required, duplicate name, invalid format, or invalid user IDs)
  * - 403: Email not verified (owner must verify email first)
  * - 404: User not found
  * - 500: Internal server error
@@ -40,7 +40,7 @@ import mongoose from "mongoose";
  * - Zod validation for request body
  * - Prevents duplicate workspace names per owner
  * - Validates all member IDs exist in User collection
- * - Only valid users are added to members array
+ * - Returns error if any provided user ID doesn't exist
  * - Owner automatically included in members (cannot be excluded)
  * - Duplicates prevented using Set
  * - Unique invite code generated for workspace
@@ -78,8 +78,17 @@ export const createWorkspace = async (req: Request, res: Response) => {
     let finalMembers: string[] = [];
     if (Array.isArray(members) && members.length > 0) {
       const users = await User.find({ _id: { $in: members } }).select("_id");
+      const validIds = users.map(u => u._id.toString());
 
-      finalMembers = users.map(u => u._id.toString());
+      // Check if any provided member IDs don't exist in User collection
+      const invalidMembers = members.filter(id => !validIds.includes(id));
+      if (invalidMembers.length > 0) {
+        return res.status(400).json({
+          message: `Invalid user IDs: ${invalidMembers.join(", ")}. These users do not exist.`
+        });
+      }
+
+      finalMembers = validIds;
     }
 
     // ✔ Ensure owner always included and duplicates removed
@@ -213,7 +222,7 @@ export const getWorkspaceById = async (req: Request, res: Response) => {
  *
  * Response:
  * - 200: Workspace updated successfully with updated workspace object
- * - 400: Validation error (invalid ID or body format)
+ * - 400: Validation error (invalid ID, body format, or invalid user IDs)
  * - 403: Not authorized (user is not the workspace owner)
  * - 404: Workspace not found
  * - 500: Internal server error
@@ -222,11 +231,13 @@ export const getWorkspaceById = async (req: Request, res: Response) => {
  * - Validates both workspace ID and request body using Zod
  * - Verifies ownership before allowing updates
  * - Validates all member IDs exist in User collection
- * - Only valid users are added to members array
- * - Invalid user IDs are silently ignored
+ * - Returns error if any provided user ID doesn't exist
  * - Owner cannot be removed from members array (auto-included)
  * - Duplicates prevented using Set
  * - Updates users' workspaces arrays when members are added/removed (bidirectional relationship)
+ * - CASCADE: When members are removed from workspace, they are automatically:
+ *   - Removed from all projects in the workspace
+ *   - Unassigned from all tasks in the workspace
  */
 export const updateWorkspace = async (req: Request, res: Response) => {
   try {
@@ -264,6 +275,14 @@ export const updateWorkspace = async (req: Request, res: Response) => {
       const users = await User.find({ _id: { $in: members } }).select("_id");
       const validIds = users.map(u => u._id.toString());
 
+      // Check if any provided member IDs don't exist in User collection
+      const invalidMembers = members.filter(id => !validIds.includes(id));
+      if (invalidMembers.length > 0) {
+        return res.status(400).json({
+          message: `Invalid user IDs: ${invalidMembers.join(", ")}. These users do not exist.`
+        });
+      }
+
       const updatedMembers = new Set<string>([
         workspace.owner.toString(),
         ...validIds
@@ -292,6 +311,23 @@ export const updateWorkspace = async (req: Request, res: Response) => {
         await User.updateMany(
           { _id: { $in: membersToRemove } },
           { $pull: { workspaces: workspace._id } }
+        );
+
+        // CASCADE: Remove these users from all projects in this workspace
+        // Convert string IDs to ObjectIds for MongoDB comparison
+        const memberObjectIdsToRemove = membersToRemove.map(
+          id => new mongoose.Types.ObjectId(id)
+        );
+
+        await Project.updateMany(
+          { workspace: workspace._id },
+          { $pull: { members: { $in: memberObjectIdsToRemove } } }
+        );
+
+        // CASCADE: Unassign these users from all tasks in this workspace
+        await Task.updateMany(
+          { workspace: workspace._id, assignedTo: { $in: memberObjectIdsToRemove } },
+          { $unset: { assignedTo: "" } }
         );
       }
     }
