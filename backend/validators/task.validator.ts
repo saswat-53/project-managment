@@ -28,12 +28,13 @@ export const createTaskSchema = z.object({
 /**
  * Schema for updating task details
  * All fields are optional to allow partial updates
+ * assignedTo can be null to unassign the task
  */
 export const updateTaskSchema = z.object({
   title: z.string().min(1, "Task title cannot be empty").optional(),
   description: z.string().optional(),
   status: z.enum(["todo", "in-progress", "done"]).optional(),
-  assignedTo: z.string().optional(),
+  assignedTo: z.string().nullable().optional(),
   dueDate: z.string().datetime().optional().or(z.date().optional()),
 });
 

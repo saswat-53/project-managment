@@ -303,19 +303,24 @@ export const updateTask = async (req: Request, res: Response) => {
     if (dueDate !== undefined) task.dueDate = new Date(dueDate);
 
     if (assignedTo !== undefined) {
-      // Check if assignedTo user is a project member
-      // Note: Project members are already validated to be workspace members
-      const isProjectMemberAssignee = project.members
-        .map((id: any) => id.toString())
-        .includes(assignedTo);
+      // Allow null to unassign the task
+      if (assignedTo === null) {
+        task.assignedTo = undefined;
+      } else {
+        // Check if assignedTo user is a project member
+        // Note: Project members are already validated to be workspace members
+        const isProjectMemberAssignee = project.members
+          .map((id: any) => id.toString())
+          .includes(assignedTo);
 
-      if (!isProjectMemberAssignee) {
-        return res.status(400).json({
-          message: "Assigned user must be a project member",
-        });
+        if (!isProjectMemberAssignee) {
+          return res.status(400).json({
+            message: "Assigned user must be a project member",
+          });
+        }
+
+        task.assignedTo = new mongoose.Types.ObjectId(assignedTo);
       }
-
-      task.assignedTo = new mongoose.Types.ObjectId(assignedTo);
     }
 
     await task.save();

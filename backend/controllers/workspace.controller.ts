@@ -157,10 +157,10 @@ export const getMyWorkspaces = async (req: Request, res: Response) => {
  * Get Single Workspace by ID
  *
  * Retrieves a specific workspace by its ID with populated owner and members.
- * Validates the workspace ID parameter using Zod schema.
+ * User must be a member of the workspace to view it.
  *
  * @route GET /api/workspace/:workspaceId
- * @access Private (requires authentication)
+ * @access Private (requires authentication and workspace membership)
  *
  * URL Parameters:
  * - workspaceId: string (required, MongoDB ObjectId, validated by Zod)
@@ -168,10 +168,14 @@ export const getMyWorkspaces = async (req: Request, res: Response) => {
  * Response:
  * - 200: Workspace object with populated owner and members (name, email)
  * - 400: Validation error (invalid workspace ID format)
+ * - 403: Not authorized (user is not a workspace member)
  * - 404: Workspace not found
  * - 500: Internal server error
  *
- * @note Workspace ID is validated before querying database
+ * @security
+ * - Validates workspace ID using Zod schema
+ * - Verifies workspace exists
+ * - Checks user is a workspace member before returning data
  */
 export const getWorkspaceById = async (req: Request, res: Response) => {
   try {
@@ -185,6 +189,7 @@ export const getWorkspaceById = async (req: Request, res: Response) => {
     }
 
     const { workspaceId } = validation.data;
+    const userId = (req as any).user._id;
 
     const workspace = await Workspace.findById(workspaceId)
       .populate("owner", "name email")
@@ -192,6 +197,15 @@ export const getWorkspaceById = async (req: Request, res: Response) => {
 
     if (!workspace) {
       return res.status(404).json({ message: "Workspace not found" });
+    }
+
+    // Check if user is a workspace member
+    const isMember = workspace.members
+      .map((id: any) => id.toString())
+      .includes(userId.toString());
+
+    if (!isMember) {
+      return res.status(403).json({ message: "Not authorized" });
     }
 
     return res.status(200).json({ workspace });
@@ -321,7 +335,7 @@ export const updateWorkspace = async (req: Request, res: Response) => {
 
         await Project.updateMany(
           { workspace: workspace._id },
-          { $pull: { members: { $in: memberObjectIdsToRemove } } }
+          { $pullAll: { members: memberObjectIdsToRemove } }
         );
 
         // CASCADE: Unassign these users from all tasks in this workspace

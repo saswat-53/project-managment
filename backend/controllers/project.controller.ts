@@ -365,6 +365,7 @@ export const updateProject = async (req: Request, res: Response) => {
           id => new mongoose.Types.ObjectId(id)
         );
 
+        // Use $in in query filter to match any task assigned to removed members
         await Task.updateMany(
           { project: project._id, assignedTo: { $in: memberObjectIdsToRemove } },
           { $unset: { assignedTo: "" } }
