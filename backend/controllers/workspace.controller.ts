@@ -201,7 +201,7 @@ export const getWorkspaceById = async (req: Request, res: Response) => {
 
     // Check if user is a workspace member
     const isMember = workspace.members
-      .map((id: any) => id.toString())
+      .map((member: any) => member._id.toString())
       .includes(userId.toString());
 
     if (!isMember) {

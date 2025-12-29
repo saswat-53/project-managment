@@ -103,7 +103,7 @@ export const createProject = async (req: Request, res: Response) => {
     const project = await Project.create({
       name,
       description,
-      workspace: workspaceId,
+      workspace: new mongoose.Types.ObjectId(workspaceId),
       members: memberObjectIds,
       status: status || "backlog",
     });
@@ -373,6 +373,8 @@ export const updateProject = async (req: Request, res: Response) => {
       }
     }
 
+    // Restore workspace to ObjectId before saving (it was populated as full object)
+    project.workspace = workspace._id;
     await project.save();
 
     return res.status(200).json({
