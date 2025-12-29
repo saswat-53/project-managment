@@ -252,6 +252,7 @@ export const getProjectById = async (req: Request, res: Response) => {
  * Updates project details. User must be a workspace member to update.
  * All fields are optional for partial updates.
  * Only workspace members can be added as project members.
+ * Automatically cleans up stale members who are no longer workspace members.
  *
  * @route PUT /api/project/:projectId
  * @access Private (requires authentication and workspace membership)
@@ -278,9 +279,9 @@ export const getProjectById = async (req: Request, res: Response) => {
  * - Checks user is a workspace member before allowing updates
  * - Only workspace members can be added as project members
  * - Returns error if any provided user is not a workspace member
- * - Members array REPLACES existing members (not additive)
- * - CASCADE: When members are removed from project, they are automatically:
- *   - Unassigned from all tasks in the project
+ * - Members array is ADDITIVE (adds new members to existing ones, no duplicates)
+ * - AUTO-CLEANUP: Removes any project members who are no longer workspace members
+ * - CASCADE: Unassigns removed members from all tasks in the project
  */
 export const updateProject = async (req: Request, res: Response) => {
   try {
@@ -323,16 +324,37 @@ export const updateProject = async (req: Request, res: Response) => {
       });
     }
 
+    // AUTO-CLEANUP: Remove stale members who are no longer workspace members
+    const workspaceMemberIds = workspace.members.map((id: any) => id.toString());
+    const currentMemberIds = project.members.map((id) => id.toString());
+
+    const staleMembers = currentMemberIds.filter(
+      (memberId) => !workspaceMemberIds.includes(memberId)
+    );
+
+    if (staleMembers.length > 0) {
+      // Remove stale members from project
+      project.members = project.members.filter(
+        (id) => !staleMembers.includes(id.toString())
+      );
+
+      // CASCADE: Unassign stale members from all tasks in this project
+      const staleMemberObjectIds = staleMembers.map(
+        (id) => new mongoose.Types.ObjectId(id)
+      );
+
+      await Task.updateMany(
+        { project: project._id, assignedTo: { $in: staleMemberObjectIds } },
+        { $unset: { assignedTo: "" } }
+      );
+    }
+
     // Update fields
     if (name !== undefined) project.name = name;
     if (description !== undefined) project.description = description;
     if (status !== undefined) project.status = status;
 
     if (Array.isArray(members)) {
-      const workspaceMemberIds = workspace.members.map((id: any) =>
-        id.toString()
-      );
-
       // Check if any provided member is not in the workspace
       const invalidMembers = members.filter(
         (memberId: string) => !workspaceMemberIds.includes(memberId)
@@ -344,33 +366,16 @@ export const updateProject = async (req: Request, res: Response) => {
         });
       }
 
-      // Store old members before update
-      const oldMemberIds = project.members.map((id) => id.toString());
+      // Get existing members
+      const existingMemberIds = project.members.map((id) => id.toString());
 
-      // Build new member list (replacing, not adding)
-      const newMemberSet = new Set<string>(members);
-      const newMemberIds = Array.from(newMemberSet);
+      // Add new members to existing ones (additive, no duplicates using Set)
+      const combinedMemberSet = new Set<string>([...existingMemberIds, ...members]);
+      const newMemberIds = Array.from(combinedMemberSet);
 
       project.members = newMemberIds.map(
         (id) => new mongoose.Types.ObjectId(id)
       );
-
-      // Find members that were removed from the project
-      const membersToRemove = oldMemberIds.filter(id => !newMemberIds.includes(id));
-
-      // CASCADE: Unassign removed members from tasks in this project
-      if (membersToRemove.length > 0) {
-        // Convert string IDs to ObjectIds for MongoDB comparison
-        const memberObjectIdsToRemove = membersToRemove.map(
-          id => new mongoose.Types.ObjectId(id)
-        );
-
-        // Use $in in query filter to match any task assigned to removed members
-        await Task.updateMany(
-          { project: project._id, assignedTo: { $in: memberObjectIdsToRemove } },
-          { $unset: { assignedTo: "" } }
-        );
-      }
     }
 
     // Restore workspace to ObjectId before saving (it was populated as full object)

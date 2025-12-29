@@ -248,10 +248,8 @@ export const getWorkspaceById = async (req: Request, res: Response) => {
  * - Returns error if any provided user ID doesn't exist
  * - Owner cannot be removed from members array (auto-included)
  * - Duplicates prevented using Set
- * - Updates users' workspaces arrays when members are added/removed (bidirectional relationship)
- * - CASCADE: When members are removed from workspace, they are automatically:
- *   - Removed from all projects in the workspace
- *   - Unassigned from all tasks in the workspace
+ * - Members array is ADDITIVE (adds new members to existing ones, no duplicates)
+ * - Updates users' workspaces arrays when new members are added (bidirectional relationship)
  */
 export const updateWorkspace = async (req: Request, res: Response) => {
   try {
@@ -282,9 +280,6 @@ export const updateWorkspace = async (req: Request, res: Response) => {
     if (description !== undefined) workspace.description = description;
 
     if (Array.isArray(members)) {
-      // Store old members before update
-      const oldMemberIds = workspace.members.map(id => id.toString());
-
       // Validate members exist in DB
       const users = await User.find({ _id: { $in: members } }).select("_id");
       const validIds = users.map(u => u._id.toString());
@@ -297,51 +292,31 @@ export const updateWorkspace = async (req: Request, res: Response) => {
         });
       }
 
-      const updatedMembers = new Set<string>([
+      // Get existing members
+      const existingMemberIds = workspace.members.map(id => id.toString());
+
+      // Add new members to existing ones (additive, no duplicates using Set)
+      // Owner is always included
+      const combinedMemberSet = new Set<string>([
         workspace.owner.toString(),
+        ...existingMemberIds,
         ...validIds
       ]);
 
-      const newMemberIds = Array.from(updatedMembers);
+      const newMemberIds = Array.from(combinedMemberSet);
 
       workspace.members = newMemberIds.map(
         id => new mongoose.Types.ObjectId(id)
       );
 
-      // Find members to add and remove
-      const membersToAdd = newMemberIds.filter(id => !oldMemberIds.includes(id));
-      const membersToRemove = oldMemberIds.filter(id => !newMemberIds.includes(id));
+      // Find only new members to add
+      const membersToAdd = newMemberIds.filter(id => !existingMemberIds.includes(id));
 
       // Add workspace to new members' workspaces array
       if (membersToAdd.length > 0) {
         await User.updateMany(
           { _id: { $in: membersToAdd } },
           { $addToSet: { workspaces: workspace._id } }
-        );
-      }
-
-      // Remove workspace from removed members' workspaces array
-      if (membersToRemove.length > 0) {
-        await User.updateMany(
-          { _id: { $in: membersToRemove } },
-          { $pull: { workspaces: workspace._id } }
-        );
-
-        // CASCADE: Remove these users from all projects in this workspace
-        // Convert string IDs to ObjectIds for MongoDB comparison
-        const memberObjectIdsToRemove = membersToRemove.map(
-          id => new mongoose.Types.ObjectId(id)
-        );
-
-        await Project.updateMany(
-          { workspace: workspace._id },
-          { $pullAll: { members: memberObjectIdsToRemove } }
-        );
-
-        // CASCADE: Unassign these users from all tasks in this workspace
-        await Task.updateMany(
-          { workspace: workspace._id, assignedTo: { $in: memberObjectIdsToRemove } },
-          { $unset: { assignedTo: "" } }
         );
       }
     }
