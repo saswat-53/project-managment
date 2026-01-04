@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { Project } from "../models/project.model";
 import { Workspace } from "../models/workspace.model";
-import { Task } from "../models/task.model";
 import mongoose from "mongoose";
 import {
   createProjectSchema,
@@ -280,8 +279,7 @@ export const getProjectById = async (req: Request, res: Response) => {
  * - Only workspace members can be added as project members
  * - Returns error if any provided user is not a workspace member
  * - Members array is ADDITIVE (adds new members to existing ones, no duplicates)
- * - AUTO-CLEANUP: Removes any project members who are no longer workspace members
- * - CASCADE: Unassigns removed members from all tasks in the project
+ * - Stale member cleanup automatically handled by Project pre-update hook
  */
 export const updateProject = async (req: Request, res: Response) => {
   try {
@@ -324,32 +322,8 @@ export const updateProject = async (req: Request, res: Response) => {
       });
     }
 
-    // AUTO-CLEANUP: Remove stale members who are no longer workspace members
+    // Update fields (stale member cleanup handled by pre-update hook)
     const workspaceMemberIds = workspace.members.map((id: any) => id.toString());
-    const currentMemberIds = project.members.map((id) => id.toString());
-
-    const staleMembers = currentMemberIds.filter(
-      (memberId) => !workspaceMemberIds.includes(memberId)
-    );
-
-    if (staleMembers.length > 0) {
-      // Remove stale members from project
-      project.members = project.members.filter(
-        (id) => !staleMembers.includes(id.toString())
-      );
-
-      // CASCADE: Unassign stale members from all tasks in this project
-      const staleMemberObjectIds = staleMembers.map(
-        (id) => new mongoose.Types.ObjectId(id)
-      );
-
-      await Task.updateMany(
-        { project: project._id, assignedTo: { $in: staleMemberObjectIds } },
-        { $unset: { assignedTo: "" } }
-      );
-    }
-
-    // Update fields
     if (name !== undefined) project.name = name;
     if (description !== undefined) project.description = description;
     if (status !== undefined) project.status = status;
@@ -393,32 +367,9 @@ export const updateProject = async (req: Request, res: Response) => {
 };
 
 /**
- * Delete Project
- *
- * Permanently deletes a project. User must be a workspace member to delete.
- * This action cannot be undone.
- *
- * @route DELETE /api/project/:projectId
- * @access Private (requires authentication and workspace membership)
- *
- * URL Parameters:
- * - projectId: string (required, MongoDB ObjectId, validated by Zod)
- *
- * Response:
- * - 200: Project deleted successfully
- * - 400: Validation error (invalid project ID format)
- * - 403: Not authorized (user not a workspace member)
- * - 404: Project not found
- * - 500: Internal server error
- *
- * @security
- * - Validates project ID using Zod schema
- * - Verifies project and workspace exist
- * - Checks user is a workspace member before allowing deletion
- * - Deletion is permanent and irreversible
- * - CASCADE DELETE: All tasks in the project are deleted
- *
- * @warning This action permanently removes the project and all its tasks and cannot be undone
+ * Delete a project.
+ * User must be a workspace member to delete.
+ * Cascade delete automatically handled by Project pre-delete hook.
  */
 export const deleteProject = async (req: Request, res: Response) => {
   try {
@@ -434,12 +385,16 @@ export const deleteProject = async (req: Request, res: Response) => {
     const { projectId } = validation.data;
     const userId = (req as any).user._id;
 
-    const project = await Project.findById(projectId).populate("workspace");
+    const project = await Project.findById(projectId);
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    const workspace: any = project.workspace;
+    // Fetch workspace for authorization
+    const workspace = await Workspace.findById(project.workspace);
+    if (!workspace) {
+      return res.status(404).json({ message: "Workspace not found" });
+    }
 
     // Check if user is a workspace member
     const isMember = workspace.members
@@ -450,16 +405,7 @@ export const deleteProject = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Remove project reference from workspace
-    workspace.projects = workspace.projects.filter(
-      (id: any) => id.toString() !== project._id.toString()
-    );
-
-    await workspace.save();
-
-    // CASCADE DELETE: Delete all tasks in this project
-    await Task.deleteMany({ project: project._id });
-
+    // Cascade delete and workspace cleanup handled by Project pre-delete hook
     await project.deleteOne();
 
     return res.status(200).json({ message: "Project deleted successfully" });

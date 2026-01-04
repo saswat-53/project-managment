@@ -62,4 +62,67 @@ const taskSchema = new Schema<ITask>(
   { timestamps: true }
 );
 
+// ============================================
+// DATABASE INDEXES
+// ============================================
+
+taskSchema.index({ project: 1 });
+taskSchema.index({ workspace: 1 });
+
+// ============================================
+// CASCADE DELETE HOOKS
+// ============================================
+
+/**
+ * Pre-delete hook (document context)
+ * Triggered when: await task.deleteOne()
+ * Context: 'this' is the task document being deleted
+ * Action: Removes task from project.tasks array
+ */
+taskSchema.pre("deleteOne", { document: true, query: false }, async function () {
+  const { Project } = await import("./project.model");
+
+  console.log(`[Task Hook] Removing task ${this._id} from project`);
+
+  await Project.updateOne({ _id: this.project }, { $pull: { tasks: this._id } });
+});
+
+/**
+ * Pre-delete hook (query context)
+ * Triggered when: await Task.findByIdAndDelete() or Task.deleteOne()
+ * Context: 'this' is the query
+ * Action: Removes task from project.tasks array
+ */
+taskSchema.pre("deleteOne", { document: false, query: true }, async function () {
+  const { Project } = await import("./project.model");
+  const { Task } = await import("./task.model");
+
+  const filter = this.getFilter();
+  const task = await Task.findOne(filter as any);
+  if (!task) {
+    console.log("[Task Hook Query] No task found to delete");
+    return;
+  }
+
+  console.log(`[Task Hook Query] Removing task ${task._id} from project`);
+
+  await Project.updateOne({ _id: task.project }, { $pull: { tasks: task._id } });
+});
+
+/**
+ * Pre-deleteMany hook
+ * Triggered when: await Task.deleteMany()
+ * Context: 'this' is the query
+ * Note: Project cleanup is handled by the caller (Project hook) to avoid N queries
+ */
+taskSchema.pre("deleteMany", async function () {
+  const { Task } = await import("./task.model");
+
+  const filter = this.getFilter();
+  const tasks = await Task.find(filter as any);
+  console.log(`[Task Hook] Bulk deleting ${tasks.length} tasks`);
+
+  // Project cleanup handled by caller to avoid N queries
+});
+
 export const Task = mongoose.model<ITask>("Task", taskSchema);

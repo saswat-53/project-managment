@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { Workspace, IWorkspace } from "../models/workspace.model";
 import { User } from "../models/user.model";
 import { Project } from "../models/project.model";
-import { Task } from "../models/task.model";
 import crypto from "crypto";
 import {
   createWorkspaceSchema,
@@ -335,32 +334,9 @@ export const updateWorkspace = async (req: Request, res: Response) => {
 };
 
 /**
- * Delete Workspace
- *
- * Permanently deletes a workspace. Only the workspace owner can delete.
- * This action cannot be undone.
- *
- * @route DELETE /api/workspace/:workspaceId
- * @access Private (requires authentication and ownership)
- *
- * URL Parameters:
- * - workspaceId: string (required, MongoDB ObjectId, validated by Zod)
- *
- * Response:
- * - 200: Workspace deleted successfully
- * - 400: Validation error (invalid workspace ID format)
- * - 403: Not authorized (user is not the workspace owner)
- * - 404: Workspace not found
- * - 500: Internal server error
- *
- * @security
- * - Validates workspace ID using Zod schema
- * - Verifies ownership before allowing deletion
- * - Deletion is permanent and irreversible
- * - Workspace reference removed from all members' workspaces array (bidirectional relationship)
- * - CASCADE DELETE: All projects and tasks in the workspace are deleted
- *
- * @warning This action permanently removes the workspace, all its projects, and all tasks and cannot be undone
+ * Delete a workspace.
+ * Only the workspace owner can delete.
+ * Cascade delete automatically handled by Workspace pre-delete hook.
  */
 export const deleteWorkspace = async (req: Request, res: Response) => {
   try {
@@ -386,22 +362,7 @@ export const deleteWorkspace = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Not allowed to delete" });
     }
 
-    // CASCADE DELETE: Delete all projects and their tasks
-    const projects = await Project.find({ workspace: workspace._id });
-    const projectIds = projects.map(p => p._id);
-
-    // Delete all tasks in these projects
-    await Task.deleteMany({ project: { $in: projectIds } });
-
-    // Delete all projects in the workspace
-    await Project.deleteMany({ workspace: workspace._id });
-
-    // Remove workspace from all members' workspaces array (bidirectional relationship)
-    await User.updateMany(
-      { _id: { $in: workspace.members } },
-      { $pull: { workspaces: workspace._id } }
-    );
-
+    // Cascade delete handled by Workspace pre-delete hook
     await workspace.deleteOne();
 
     return res

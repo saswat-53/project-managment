@@ -296,32 +296,9 @@ export const updateTask = async (req: Request, res: Response) => {
 };
 
 /**
- * Delete Task
- *
- * Permanently deletes a task. User must be a project member to delete.
- * This action cannot be undone.
- *
- * @route DELETE /api/task/:taskId
- * @access Private (requires authentication and project membership)
- *
- * URL Parameters:
- * - taskId: string (required, MongoDB ObjectId, validated by Zod)
- *
- * Response:
- * - 200: Task deleted successfully
- * - 400: Validation error (invalid task ID format)
- * - 403: Not authorized (user not a project member)
- * - 404: Task not found
- * - 500: Internal server error
- *
- * @security
- * - Validates task ID using Zod schema
- * - Verifies task exists
- * - Checks user is a project member before allowing deletion
- * - Deletion is permanent and irreversible
- * - Task reference removed from project.tasks array (bidirectional relationship)
- *
- * @warning This action permanently removes the task and cannot be undone
+ * Delete a task.
+ * User must be a project member to delete.
+ * Cascade cleanup automatically handled by Task pre-delete hook.
  */
 export const deleteTask = async (req: Request, res: Response) => {
   try {
@@ -355,14 +332,7 @@ export const deleteTask = async (req: Request, res: Response) => {
       });
     }
 
-    // Remove task reference from project.tasks array
-    if (project) {
-      project.tasks = project.tasks.filter(
-        (id: any) => id.toString() !== task._id.toString()
-      );
-      await project.save();
-    }
-
+    // Project cleanup handled by Task pre-delete hook
     await task.deleteOne();
 
     return res.status(200).json({ message: "Task deleted successfully" });
