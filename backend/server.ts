@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db";
 import cookieParser from "cookie-parser";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger";
 
 dotenv.config();
 connectDB();
@@ -33,9 +35,15 @@ app.use("/api/workspace", workspaceRoutes);
 app.use("/api/project", projectRoutes);
 app.use("/api/task", taskRoutes);
 
+// Swagger UI Route
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: "Project Management API Docs",
+}));
+
 // Test Route
 app.get("/", (_req, res) => {
-  res.json({ message: "Backend Running..." });
+  res.json({ message: "Backend Running... | API Docs available at /api-docs" });
 });
 
 const PORT = process.env.PORT || 5000;
