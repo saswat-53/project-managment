@@ -3,6 +3,7 @@ import {
   createWorkspace,
   getMyWorkspaces,
   getWorkspaceById,
+  getWorkspaceMembers,
   updateWorkspace,
   deleteWorkspace,
 } from "../controllers/workspace.controller";
@@ -136,6 +137,7 @@ router.get("/workspaces", verifyJWT, getMyWorkspaces);
  *       404:
  *         description: Workspace not found
  */
+router.get("/:workspaceId/members", verifyJWT, getWorkspaceMembers);
 router.get("/:workspaceId", verifyJWT, getWorkspaceById);
 
 /**

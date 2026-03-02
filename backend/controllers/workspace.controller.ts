@@ -334,6 +334,58 @@ export const updateWorkspace = async (req: Request, res: Response) => {
 };
 
 /**
+ * Get Workspace Members
+ *
+ * Retrieves all members of a workspace with their profile details.
+ * User must be a member of the workspace to access this endpoint.
+ *
+ * @route GET /api/workspace/:workspaceId/members
+ * @access Private (requires authentication and workspace membership)
+ *
+ * URL Parameters:
+ * - workspaceId: string (required, MongoDB ObjectId)
+ *
+ * Response:
+ * - 200: { success: true, data: members[] } with _id, name, email, avatarUrl, role, position
+ * - 400: Invalid workspace ID format
+ * - 403: User is not a workspace member
+ * - 404: Workspace not found
+ * - 500: Internal server error
+ */
+export const getWorkspaceMembers = async (req: Request, res: Response) => {
+  try {
+    const validation = workspaceIdParamSchema.safeParse(req.params);
+    if (!validation.success) {
+      return res.status(400).json({ message: validation.error.issues[0].message });
+    }
+
+    const { workspaceId } = validation.data;
+    const userId = (req as any).user._id;
+
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ message: "Workspace not found" });
+    }
+
+    const isMember = workspace.members
+      .map((id) => id.toString())
+      .includes(userId.toString());
+
+    if (!isMember) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const members = await User.find({ _id: { $in: workspace.members } })
+      .select("_id name email avatarUrl role position");
+
+    return res.status(200).json({ success: true, data: members });
+  } catch (error) {
+    console.error("Get workspace members error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
  * Delete a workspace.
  * Only the workspace owner can delete.
  * Cascade delete automatically handled by Workspace pre-delete hook.
