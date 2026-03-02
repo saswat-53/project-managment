@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp:*)",
+      "Bash(xargs ls:*)",
+      "Bash(ls:*)",
+      "Bash(npm uninstall:*)"
+    ]
+  }
+}
