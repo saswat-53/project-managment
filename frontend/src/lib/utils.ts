@@ -2,19 +2,27 @@ export const dataGridClassNames =
   "border border-gray-200 bg-white shadow dark:border-stroke-dark dark:bg-dark-secondary dark:text-gray-200";
 
 export const dataGridSxStyles = (isDarkMode: boolean) => {
+  const border = isDarkMode ? "#2d3135" : "#e5e7eb";
   return {
+    "--DataGrid-rowBorderColor": border,
+    "--rowBorderColor": border,
     "& .MuiDataGrid-columnHeaders": {
       color: `${isDarkMode ? "#e5e7eb" : ""}`,
+      borderBottom: `1px solid ${border}`,
       '& [role="row"] > *': {
         backgroundColor: `${isDarkMode ? "#1d1f21" : "white"}`,
-        borderColor: `${isDarkMode ? "#2d3135" : ""}`,
+        borderColor: border,
       },
+    },
+    "& .MuiDataGrid-columnSeparator": {
+      color: border,
     },
     "& .MuiIconbutton-root": {
       color: `${isDarkMode ? "#a3a3a3" : ""}`,
     },
     "& .MuiTablePagination-root": {
       color: `${isDarkMode ? "#a3a3a3" : ""}`,
+      borderTop: `1px solid ${border}`,
     },
     "& .MuiTablePagination-selectIcon": {
       color: `${isDarkMode ? "#a3a3a3" : ""}`,
@@ -23,10 +31,20 @@ export const dataGridSxStyles = (isDarkMode: boolean) => {
       border: "none",
     },
     "& .MuiDataGrid-row": {
-      borderBottom: `1px solid ${isDarkMode ? "#2d3135" : "e5e7eb"}`,
+      borderBottom: `1px solid ${border}`,
     },
     "& .MuiDataGrid-withBorderColor": {
-      borderColor: `${isDarkMode ? "#2d3135" : "e5e7eb"}`,
+      borderColor: border,
+    },
+    "& .MuiDataGrid-filler": {
+      backgroundColor: `${isDarkMode ? "#1d1f21" : "white"}`,
+      border: "none",
+    },
+    "& .MuiDataGrid-virtualScroller": {
+      backgroundColor: `${isDarkMode ? "#1d1f21" : "white"}`,
+    },
+    "& .MuiDataGrid-overlayWrapper": {
+      backgroundColor: `${isDarkMode ? "#1d1f21" : "white"}`,
     },
   };
 };

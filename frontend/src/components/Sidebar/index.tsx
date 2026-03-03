@@ -2,7 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setActiveWorkspaceId, setIsSidebarCollapsed } from "@/state";
-import { useGetProjectsQuery, useLogoutMutation } from "@/state/api";
+import { useGetProjectsQuery, useGetWorkspacesQuery, useLogoutMutation } from "@/state/api";
 import {
   Briefcase,
   ChevronDown,
@@ -10,7 +10,6 @@ import {
   Home,
   Settings,
   User,
-  Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -28,6 +27,9 @@ const Sidebar = () => {
   const activeWorkspaceId = useAppSelector(
     (state) => state.global.activeWorkspaceId,
   );
+
+  const { data: workspaces } = useGetWorkspacesQuery();
+  const activeWorkspace = workspaces?.find((w) => w._id === activeWorkspaceId);
 
   const { data: projects } = useGetProjectsQuery(activeWorkspaceId ?? "", {
     skip: !activeWorkspaceId,
@@ -75,7 +77,7 @@ const Sidebar = () => {
               Workspace
             </p>
             <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">
-              {activeWorkspaceId ? "Active workspace" : "None selected"}
+              {activeWorkspace?.name ?? (activeWorkspaceId ? "Loading..." : "None selected")}
             </p>
           </div>
           <Link
@@ -88,7 +90,7 @@ const Sidebar = () => {
 
         {/* NAVBAR LINKS */}
         <nav className="z-10 w-full">
-          <SidebarLink icon={Home} label="Home" href="/" />
+          <SidebarLink icon={Home} label="Home" href="/dashboard" />
           <SidebarLink icon={Settings} label="Settings" href="/settings" />
           <SidebarLink icon={User} label="Members" href="/users" />
         </nav>

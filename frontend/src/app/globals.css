@@ -58,6 +58,35 @@ body,
 .timeline ._29NTg {
   @apply dark:text-neutral-500;
 }
+/* List cell text (Name, From, To columns) */
+.dark .timeline ._WuQ0f,
+.dark .timeline ._3lLk3 {
+  color: #e5e7eb;
+}
+/* Column header labels (Name / From / To) */
+.dark .timeline ._2QjE6 {
+  color: #9ca3af;
+}
+.timeline ._WuQ0f {
+  text-align: center;
+}
+.timeline ._2QjE6 {
+  display: block;
+  text-align: center;
+  width: 100%;
+}
+/* Sub-header row text */
+.dark .timeline ._2TfEi {
+  color: #9ca3af;
+}
+/* Task label rendered next to bar in SVG */
+.timeline ._3KcaM {
+  @apply fill-[#555] dark:fill-gray-300;
+}
+/* Lower date tick labels in chart */
+.timeline ._2q1Kt {
+  @apply fill-[#555] dark:fill-gray-400;
+}
 
 ::-webkit-scrollbar {
   width: 0px;
