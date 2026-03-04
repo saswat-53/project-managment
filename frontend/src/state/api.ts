@@ -9,6 +9,7 @@ export interface User {
   avatarUrl?: string;
   role: "admin" | "manager" | "member";
   position?: string;
+  isEmailVerified?: boolean;
 }
 
 export interface Workspace {
@@ -73,6 +74,7 @@ export const api = createApi({
     }),
     getCurrentUser: build.query<User, void>({
       query: () => "auth/me",
+      transformResponse: (res: { user: User }) => res.user,
       providesTags: ["CurrentUser"],
     }),
 
@@ -146,6 +148,32 @@ export const api = createApi({
         { type: "Tasks", id: taskId },
       ],
     }),
+    updateTask: build.mutation<
+      { message: string; task: Task },
+      {
+        taskId: string;
+        title?: string;
+        description?: string;
+        status?: string;
+        dueDate?: string;
+        assignedTo?: string | null;
+      }
+    >({
+      query: ({ taskId, ...body }) => ({
+        url: `task/${taskId}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (result, error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+      ],
+    }),
+    changePassword: build.mutation<
+      { message: string },
+      { oldPassword: string; newPassword: string }
+    >({
+      query: (body) => ({ url: "auth/change-password", method: "POST", body }),
+    }),
   }),
 });
 
@@ -162,4 +190,6 @@ export const {
   useGetTasksQuery,
   useCreateTaskMutation,
   useUpdateTaskStatusMutation,
+  useUpdateTaskMutation,
+  useChangePasswordMutation,
 } = api;

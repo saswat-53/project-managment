@@ -1,11 +1,12 @@
 import { useGetTasksQuery, useUpdateTaskStatusMutation } from "@/state/api";
-import React from "react";
+import { useState } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Task as TaskType } from "@/state/api";
 import { EllipsisVertical, MessageSquareMore, Plus } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
+import ModalEditTask from "@/components/ModalEditTask";
 
 type BoardProps = {
   id: string;
@@ -125,6 +126,7 @@ type TaskProps = {
 };
 
 const Task = ({ task }: TaskProps) => {
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "task",
     item: { id: task._id },
@@ -138,61 +140,76 @@ const Task = ({ task }: TaskProps) => {
     : "";
 
   return (
-    <div
-      ref={(instance) => {
-        drag(instance);
-      }}
-      className={`mb-4 rounded-md bg-white shadow dark:bg-dark-secondary ${
-        isDragging ? "opacity-50" : "opacity-100"
-      }`}
-    >
-      <div className="p-4 md:p-6">
-        <div className="my-3 flex justify-between">
-          <h4 className="text-md font-bold dark:text-white">{task.title}</h4>
-        </div>
-
-        {formattedDueDate && (
-          <div className="text-xs text-gray-500 dark:text-neutral-500">
-            Due: {formattedDueDate}
+    <>
+      {isEditOpen && (
+        <ModalEditTask
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+          task={task}
+        />
+      )}
+      <div
+        ref={(instance) => {
+          drag(instance);
+        }}
+        className={`mb-4 rounded-md bg-white shadow dark:bg-dark-secondary ${
+          isDragging ? "opacity-50" : "opacity-100"
+        }`}
+      >
+        <div className="p-4 md:p-6">
+          <div className="my-3 flex justify-between">
+            <h4 className="text-md font-bold dark:text-white">{task.title}</h4>
           </div>
-        )}
-        {task.description && (
-          <p className="mt-1 text-sm text-gray-600 dark:text-neutral-500">
-            {task.description}
-          </p>
-        )}
-        <div className="mt-4 border-t border-gray-200 dark:border-stroke-dark" />
 
-        {/* Assignee avatar */}
-        <div className="mt-3 flex items-center justify-between">
-          <div className="flex -space-x-[6px] overflow-hidden">
-            {task.assignedTo?.avatarUrl && (
-              <Image
-                key={task.assignedTo._id}
-                src={task.assignedTo.avatarUrl}
-                alt={task.assignedTo.name}
-                width={30}
-                height={30}
-                className="h-8 w-8 rounded-full border-2 border-white object-cover dark:border-dark-secondary"
-              />
-            )}
-            {task.createdBy?.avatarUrl && (
-              <Image
-                key={task.createdBy._id}
-                src={task.createdBy.avatarUrl}
-                alt={task.createdBy.name}
-                width={30}
-                height={30}
-                className="h-8 w-8 rounded-full border-2 border-white object-cover dark:border-dark-secondary"
-              />
-            )}
-          </div>
-          <div className="flex items-center text-gray-500 dark:text-neutral-500">
-            <MessageSquareMore size={20} />
+          {formattedDueDate && (
+            <div className="text-xs text-gray-500 dark:text-neutral-500">
+              Due: {formattedDueDate}
+            </div>
+          )}
+          {task.description && (
+            <p className="mt-1 text-sm text-gray-600 dark:text-neutral-500">
+              {task.description}
+            </p>
+          )}
+          <div className="mt-4 border-t border-gray-200 dark:border-stroke-dark" />
+
+          {/* Assignee avatar + edit button */}
+          <div className="mt-3 flex items-center justify-between">
+            <div className="flex -space-x-[6px] overflow-hidden">
+              {task.assignedTo?.avatarUrl && (
+                <Image
+                  key={task.assignedTo._id}
+                  src={task.assignedTo.avatarUrl}
+                  alt={task.assignedTo.name}
+                  width={30}
+                  height={30}
+                  className="h-8 w-8 rounded-full border-2 border-white object-cover dark:border-dark-secondary"
+                  unoptimized
+                />
+              )}
+              {task.createdBy?.avatarUrl && (
+                <Image
+                  key={task.createdBy._id}
+                  src={task.createdBy.avatarUrl}
+                  alt={task.createdBy.name}
+                  width={30}
+                  height={30}
+                  className="h-8 w-8 rounded-full border-2 border-white object-cover dark:border-dark-secondary"
+                  unoptimized
+                />
+              )}
+            </div>
+            <button
+              className={`flex items-center ${task.status === "done" ? "cursor-not-allowed text-gray-300 dark:text-neutral-700" : "text-gray-500 hover:text-blue-500 dark:text-neutral-500 dark:hover:text-blue-400"}`}
+              onClick={() => task.status !== "done" && setIsEditOpen(true)}
+              title={task.status === "done" ? "Cannot edit a completed task" : "Edit task"}
+            >
+              <MessageSquareMore size={20} />
+            </button>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

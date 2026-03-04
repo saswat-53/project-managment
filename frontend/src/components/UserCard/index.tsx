@@ -16,6 +16,7 @@ const UserCard = ({ user }: Props) => {
           width={32}
           height={32}
           className="rounded-full"
+          unoptimized
         />
       )}
       <div className="ml-3">

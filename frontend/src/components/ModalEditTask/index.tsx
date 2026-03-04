@@ -1,16 +1,18 @@
+"use client";
+
 import Modal from "@/components/Modal";
-import { useCreateTaskMutation, useGetWorkspaceMembersQuery } from "@/state/api";
+import { Task, useUpdateTaskMutation, useGetWorkspaceMembersQuery } from "@/state/api";
 import { useAppSelector } from "@/app/redux";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  id?: string | null;
+  task: Task;
 };
 
-const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
-  const [createTask, { isLoading }] = useCreateTaskMutation();
+const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
+  const [updateTask, { isLoading }] = useUpdateTaskMutation();
   const activeWorkspaceId = useAppSelector(
     (state) => state.global.activeWorkspaceId,
   );
@@ -20,48 +22,44 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
     { skip: !activeWorkspaceId },
   );
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<"todo" | "in-progress" | "done">("todo");
-  const [dueDate, setDueDate] = useState("");
-  const [assignedTo, setAssignedTo] = useState("");
-  const [projectId, setProjectId] = useState("");
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description ?? "");
+  const [status, setStatus] = useState<"todo" | "in-progress" | "done">(
+    task.status ?? "todo",
+  );
+  const [dueDate, setDueDate] = useState(
+    task.dueDate ? task.dueDate.slice(0, 10) : "",
+  );
+  const [assignedTo, setAssignedTo] = useState(task.assignedTo?._id ?? "");
+
+  useEffect(() => {
+    setTitle(task.title);
+    setDescription(task.description ?? "");
+    setStatus(task.status ?? "todo");
+    setDueDate(task.dueDate ? task.dueDate.slice(0, 10) : "");
+    setAssignedTo(task.assignedTo?._id ?? "");
+  }, [task]);
 
   const handleSubmit = async () => {
-    const project = id !== null ? id : projectId;
-    if (!title || !project || !activeWorkspaceId) return;
-
-    await createTask({
+    if (!title) return;
+    await updateTask({
+      taskId: task._id,
       title,
       description,
       status,
       dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-      project,
-      workspace: activeWorkspaceId,
-      assignedTo: assignedTo || undefined,
+      assignedTo: assignedTo || null,
     });
-
-    setTitle("");
-    setDescription("");
-    setStatus("todo");
-    setDueDate("");
-    setAssignedTo("");
-    setProjectId("");
     onClose();
   };
 
-  const isFormValid = () => {
-    return title && (id !== null || projectId) && activeWorkspaceId;
-  };
-
+  const inputStyles =
+    "w-full rounded border border-gray-300 p-2 shadow-sm dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none";
   const selectStyles =
     "mb-4 block w-full rounded border border-gray-300 px-3 py-2 dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none";
 
-  const inputStyles =
-    "w-full rounded border border-gray-300 p-2 shadow-sm dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none";
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} name="Create New Task">
+    <Modal isOpen={isOpen} onClose={onClose} name="Edit Task">
       <form
         className="mt-4 space-y-6"
         onSubmit={(e) => {
@@ -82,7 +80,6 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-
         <select
           className={selectStyles}
           value={status}
@@ -94,49 +91,36 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
           <option value="in-progress">In Progress</option>
           <option value="done">Done</option>
         </select>
-
         <input
           type="date"
           className={inputStyles}
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
         />
-
         <select
           className={selectStyles}
           value={assignedTo}
           onChange={(e) => setAssignedTo(e.target.value)}
         >
-          <option value="">Assign to... (optional)</option>
+          <option value="">Unassigned</option>
           {members?.map((member) => (
             <option key={member._id} value={member._id}>
               {member.name} ({member.role})
             </option>
           ))}
         </select>
-
-        {id === null && (
-          <input
-            type="text"
-            className={inputStyles}
-            placeholder="Project ID"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-          />
-        )}
-
         <button
           type="submit"
           className={`focus-offset-2 mt-4 flex w-full justify-center rounded-md border border-transparent bg-blue-primary px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 ${
-            !isFormValid() || isLoading ? "cursor-not-allowed opacity-50" : ""
+            !title || isLoading ? "cursor-not-allowed opacity-50" : ""
           }`}
-          disabled={!isFormValid() || isLoading}
+          disabled={!title || isLoading}
         >
-          {isLoading ? "Creating..." : "Create Task"}
+          {isLoading ? "Saving..." : "Save Changes"}
         </button>
       </form>
     </Modal>
   );
 };
 
-export default ModalNewTask;
+export default ModalEditTask;

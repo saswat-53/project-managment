@@ -41,6 +41,7 @@ const columns: GridColDef[] = [
               width={36}
               height={36}
               className="h-full w-full rounded-full object-cover"
+              unoptimized
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center rounded-full bg-gray-200 text-xs text-gray-500">

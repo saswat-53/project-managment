@@ -77,6 +77,7 @@ const Navbar = () => {
                 width={36}
                 height={36}
                 className="h-full w-full rounded-full object-cover"
+                unoptimized
               />
             ) : (
               <User className="h-6 w-6 cursor-pointer self-center rounded-full dark:text-white" />

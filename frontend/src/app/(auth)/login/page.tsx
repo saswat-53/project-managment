@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
 import { useLoginMutation } from "@/state/api";
 import { setActiveWorkspaceId } from "@/state";
 import { useAppDispatch } from "@/app/redux";
@@ -14,6 +15,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -118,17 +120,36 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-                className="w-full border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white placeholder-zinc-700 outline-none transition-all duration-200 focus:border-amber-400 focus:ring-0"
-              />
+              <div className="mb-2 flex items-center justify-between">
+                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+                  Password
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                  className="w-full border border-zinc-800 bg-zinc-900 px-4 py-3 pr-11 text-sm text-white placeholder-zinc-700 outline-none transition-all duration-200 focus:border-amber-400 focus:ring-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 transition-colors hover:text-amber-400"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+
+              </div>
+              <button
+                type="button"
+                className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 transition-colors hover:text-amber-400"
+              >
+                Forgot password?
+              </button>
             </div>
 
             {error && (
