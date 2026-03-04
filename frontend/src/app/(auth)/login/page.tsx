@@ -144,12 +144,12 @@ export default function LoginPage() {
                 </button>
 
               </div>
-              <button
-                type="button"
+              <Link
+                href="/forgot-password"
                 className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 transition-colors hover:text-amber-400"
               >
                 Forgot password?
-              </button>
+              </Link>
             </div>
 
             {error && (

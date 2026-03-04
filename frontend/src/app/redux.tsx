@@ -76,6 +76,10 @@ export type AppDispatch = AppStore["dispatch"];
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
+/* PERSISTOR — exported so components can call persistor.purge() on logout */
+let persistor: ReturnType<typeof persistStore>;
+export const getPersistor = () => persistor;
+
 /* PROVIDER */
 export default function StoreProvider({
   children,
@@ -87,7 +91,9 @@ export default function StoreProvider({
     storeRef.current = makeStore();
     setupListeners(storeRef.current.dispatch);
   }
-  const persistor = persistStore(storeRef.current);
+  if (!persistor) {
+    persistor = persistStore(storeRef.current);
+  }
 
   return (
     <Provider store={storeRef.current}>

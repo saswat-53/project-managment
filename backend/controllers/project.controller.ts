@@ -222,7 +222,7 @@ export const getProjectById = async (req: Request, res: Response) => {
     const userId = (req as any).user._id;
 
     const project = await Project.findById(projectId)
-      .populate("members", "name email")
+      .populate("members", "name email role avatarUrl")
       .populate("workspace", "name members");
 
     if (!project) {

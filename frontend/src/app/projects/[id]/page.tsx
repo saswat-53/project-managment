@@ -7,6 +7,7 @@ import List from "../ListView";
 import Timeline from "../TimelineView";
 import Table from "../TableView";
 import ModalNewTask from "@/components/ModalNewTask";
+import ModalAddMember from "@/components/ModalAddMember";
 import DashboardWrapper from "@/app/dashboardWrapper";
 import { useGetTasksQuery } from "@/state/api";
 
@@ -18,6 +19,7 @@ const Project = ({ params }: Props) => {
   const { id } = React.use(params);
   const [activeTab, setActiveTab] = useState("Board");
   const [isModalNewTaskOpen, setIsModalNewTaskOpen] = useState(false);
+  const [isModalAddMemberOpen, setIsModalAddMemberOpen] = useState(false);
 
   const { isLoading, error } = useGetTasksQuery({ projectId: id });
 
@@ -39,7 +41,16 @@ const Project = ({ params }: Props) => {
         onClose={() => setIsModalNewTaskOpen(false)}
         id={id}
       />
-      <ProjectHeader activeTab={activeTab} setActiveTab={setActiveTab} />
+      <ModalAddMember
+        isOpen={isModalAddMemberOpen}
+        onClose={() => setIsModalAddMemberOpen(false)}
+        projectId={id}
+      />
+      <ProjectHeader
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onAddMember={() => setIsModalAddMemberOpen(true)}
+      />
 
       {isLoading && (
         <div className="flex h-64 items-center justify-center text-gray-500 dark:text-gray-400">

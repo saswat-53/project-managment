@@ -10,6 +10,35 @@ import {
 } from "../validators/task.validator";
 
 /**
+ * Recomputes and persists the project status based on its current tasks.
+ *
+ * Rules (evaluated in priority order):
+ *  1. No tasks            → "backlog"
+ *  2. All tasks "done"    → "completed"
+ *  3. Any task overdue    → "backlog"  (past dueDate and not "done")
+ *  4. Otherwise           → "in-progress"
+ */
+async function recomputeProjectStatus(projectId: mongoose.Types.ObjectId | string) {
+  const tasks = await Task.find({ project: projectId }, "status dueDate");
+
+  let newStatus: "backlog" | "in-progress" | "completed";
+
+  if (tasks.length === 0) {
+    newStatus = "backlog";
+  } else if (tasks.every((t) => t.status === "done")) {
+    newStatus = "completed";
+  } else {
+    const now = new Date();
+    const hasOverdue = tasks.some(
+      (t) => t.status !== "done" && t.dueDate && t.dueDate < now
+    );
+    newStatus = hasOverdue ? "backlog" : "in-progress";
+  }
+
+  await Project.updateOne({ _id: projectId }, { status: newStatus });
+}
+
+/**
  * Create Task
  *
  * Creates a new task within a project.
@@ -106,6 +135,8 @@ export const createTask = async (req: Request, res: Response) => {
     // Add task to project.tasks array (bidirectional relationship)
     project.tasks.push(task._id);
     await project.save();
+
+    await recomputeProjectStatus(project._id);
 
     return res.status(201).json({
       message: "Task created successfully",
@@ -285,6 +316,8 @@ export const updateTask = async (req: Request, res: Response) => {
 
     await task.save();
 
+    await recomputeProjectStatus(project._id);
+
     return res.status(200).json({
       message: "Task updated successfully",
       task,
@@ -333,7 +366,10 @@ export const deleteTask = async (req: Request, res: Response) => {
     }
 
     // Project cleanup handled by Task pre-delete hook
+    const projectId = project._id;
     await task.deleteOne();
+
+    await recomputeProjectStatus(projectId);
 
     return res.status(200).json({ message: "Task deleted successfully" });
   } catch (error) {

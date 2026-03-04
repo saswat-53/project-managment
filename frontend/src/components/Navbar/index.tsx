@@ -3,9 +3,9 @@
 import React from "react";
 import { Menu, Moon, Settings, Sun, User } from "lucide-react";
 import Link from "next/link";
-import { useAppDispatch, useAppSelector } from "@/app/redux";
+import { useAppDispatch, useAppSelector, getPersistor } from "@/app/redux";
 import { setActiveWorkspaceId, setIsDarkMode, setIsSidebarCollapsed } from "@/state";
-import { useGetCurrentUserQuery, useLogoutMutation } from "@/state/api";
+import { api, useGetCurrentUserQuery, useLogoutMutation } from "@/state/api";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -25,6 +25,8 @@ const Navbar = () => {
       await logout().unwrap();
     } catch {}
     dispatch(setActiveWorkspaceId(null));
+    dispatch(api.util.resetApiState());
+    await getPersistor().purge();
     router.push("/login");
   };
 

@@ -7,6 +7,7 @@ import {
   PlusSquare,
   Share2,
   Table,
+  UserPlus,
 } from "lucide-react";
 import React, { useState } from "react";
 import ModalNewProject from "./ModalNewProject";
@@ -14,9 +15,10 @@ import ModalNewProject from "./ModalNewProject";
 type Props = {
   activeTab: string;
   setActiveTab: (tabName: string) => void;
+  onAddMember?: () => void;
 };
 
-const ProjectHeader = ({ activeTab, setActiveTab }: Props) => {
+const ProjectHeader = ({ activeTab, setActiveTab, onAddMember }: Props) => {
   const [isModalNewProjectOpen, setIsModalNewProjectOpen] = useState(false);
 
   return (
@@ -74,6 +76,16 @@ const ProjectHeader = ({ activeTab, setActiveTab }: Props) => {
           <button className="text-gray-500 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-gray-300">
             <Share2 className="h-5 w-5" />
           </button>
+          {onAddMember && (
+            <button
+              onClick={onAddMember}
+              className="flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-blue-primary hover:text-blue-primary dark:border-stroke-dark dark:text-neutral-400 dark:hover:border-blue-400 dark:hover:text-blue-400"
+              title="Add member to project"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add Member
+            </button>
+          )}
           <div className="relative">
             <input
               type="text"

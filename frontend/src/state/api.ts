@@ -98,6 +98,11 @@ export const api = createApi({
     }),
 
     // Projects
+    getProjectById: build.query<Project & { members: User[] }, string>({
+      query: (projectId) => `project/${projectId}`,
+      transformResponse: (res: { project: Project & { members: User[] } }) => res.project,
+      providesTags: ["Projects"],
+    }),
     getProjects: build.query<Project[], string>({
       query: (workspaceId) => `project/workspace/${workspaceId}`,
       transformResponse: (res: { projects: Project[] }) => res.projects,
@@ -108,6 +113,17 @@ export const api = createApi({
       { name: string; description?: string; workspaceId: string }
     >({
       query: (body) => ({ url: "project/projects", method: "POST", body }),
+      invalidatesTags: ["Projects"],
+    }),
+    updateProject: build.mutation<
+      { message: string; project: Project },
+      { projectId: string; members: string[] }
+    >({
+      query: ({ projectId, ...body }) => ({
+        url: `project/${projectId}`,
+        method: "PUT",
+        body,
+      }),
       invalidatesTags: ["Projects"],
     }),
 
@@ -127,13 +143,12 @@ export const api = createApi({
         description?: string;
         status?: string;
         dueDate?: string;
-        project: string;
-        workspace: string;
+        projectId: string;
         assignedTo?: string;
       }
     >({
       query: (body) => ({ url: "task/tasks", method: "POST", body }),
-      invalidatesTags: ["Tasks"],
+      invalidatesTags: ["Tasks", "Projects"],
     }),
     updateTaskStatus: build.mutation<
       { message: string; task: Task },
@@ -144,8 +159,9 @@ export const api = createApi({
         method: "PUT",
         body: { status },
       }),
-      invalidatesTags: (result, error, { taskId }) => [
+      invalidatesTags: (_result, _error, { taskId }) => [
         { type: "Tasks", id: taskId },
+        "Projects",
       ],
     }),
     updateTask: build.mutation<
@@ -164,8 +180,9 @@ export const api = createApi({
         method: "PUT",
         body,
       }),
-      invalidatesTags: (result, error, { taskId }) => [
+      invalidatesTags: (_result, _error, { taskId }) => [
         { type: "Tasks", id: taskId },
+        "Projects",
       ],
     }),
     changePassword: build.mutation<
@@ -173,6 +190,19 @@ export const api = createApi({
       { oldPassword: string; newPassword: string }
     >({
       query: (body) => ({ url: "auth/change-password", method: "POST", body }),
+    }),
+    forgotPassword: build.mutation<{ message: string }, { email: string }>({
+      query: (body) => ({ url: "auth/forgot-password", method: "POST", body }),
+    }),
+    resetPassword: build.mutation<
+      { message: string },
+      { token: string; newPassword: string }
+    >({
+      query: ({ token, newPassword }) => ({
+        url: `auth/reset-password/${token}`,
+        method: "POST",
+        body: { newPassword },
+      }),
     }),
   }),
 });
@@ -191,5 +221,9 @@ export const {
   useCreateTaskMutation,
   useUpdateTaskStatusMutation,
   useUpdateTaskMutation,
+  useGetProjectByIdQuery,
+  useUpdateProjectMutation,
   useChangePasswordMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
 } = api;
