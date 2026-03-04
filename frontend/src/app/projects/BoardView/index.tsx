@@ -19,19 +19,12 @@ const taskStatus = [
 ];
 
 const BoardView = ({ id, setIsModalNewTaskOpen }: BoardProps) => {
-  const {
-    data: tasks,
-    isLoading,
-    error,
-  } = useGetTasksQuery({ projectId: id });
+  const { data: tasks } = useGetTasksQuery({ projectId: id });
   const [updateTaskStatus] = useUpdateTaskStatusMutation();
 
   const moveTask = (taskId: string, toStatus: string) => {
     updateTaskStatus({ taskId, status: toStatus });
   };
-
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>An error occurred while fetching tasks</div>;
 
   return (
     <DndProvider backend={HTML5Backend}>

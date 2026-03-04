@@ -29,7 +29,7 @@ const addDays = (date: Date, days: number) => {
 
 const Timeline = ({ id, setIsModalNewTaskOpen }: Props) => {
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
-  const { data: tasks, error, isLoading } = useGetTasksQuery({ projectId: id });
+  const { data: tasks } = useGetTasksQuery({ projectId: id });
 
   const [displayOptions, setDisplayOptions] = useState<DisplayOption>({
     viewMode: ViewMode.Month,
@@ -81,20 +81,6 @@ const Timeline = ({ id, setIsModalNewTaskOpen }: Props) => {
     }));
   };
 
-  if (isLoading)
-    return (
-      <div className="flex h-40 items-center justify-center text-gray-500 dark:text-gray-400">
-        Loading timeline...
-      </div>
-    );
-
-  if (error || !tasks)
-    return (
-      <div className="flex h-40 items-center justify-center text-red-500">
-        Failed to load tasks.
-      </div>
-    );
-
   return (
     <div className="px-4 xl:px-6">
       {/* Header */}
@@ -102,7 +88,7 @@ const Timeline = ({ id, setIsModalNewTaskOpen }: Props) => {
         <div>
           <h1 className="text-lg font-bold dark:text-white">Timeline</h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {tasks.length} task{tasks.length !== 1 ? "s" : ""}
+            {(tasks ?? []).length} task{(tasks ?? []).length !== 1 ? "s" : ""}
           </p>
         </div>
 
