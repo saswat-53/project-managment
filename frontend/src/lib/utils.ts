@@ -33,6 +33,9 @@ export const dataGridSxStyles = (isDarkMode: boolean) => {
     "& .MuiDataGrid-row": {
       borderBottom: `1px solid ${border}`,
     },
+    "& .MuiDataGrid-row:hover": {
+      backgroundColor: `${isDarkMode ? "#2d3135" : "#f9fafb"}`,
+    },
     "& .MuiDataGrid-withBorderColor": {
       borderColor: border,
     },

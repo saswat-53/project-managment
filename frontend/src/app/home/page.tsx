@@ -1,7 +1,7 @@
 "use client";
 
 import { Project, Task, useGetProjectsQuery } from "@/state/api";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAppSelector } from "../redux";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Header from "@/components/Header";
@@ -29,6 +29,9 @@ const taskColumns: GridColDef[] = [
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 const HomePage = () => {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+
   const activeWorkspaceId = useAppSelector(
     (state) => state.global.activeWorkspaceId,
   );
@@ -78,19 +81,29 @@ const HomePage = () => {
           <h3 className="mb-4 text-lg font-semibold dark:text-white">
             Project Status
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={projectStatus}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={chartColors.barGrid}
-              />
-              <XAxis dataKey="name" stroke={chartColors.text} />
-              <YAxis stroke={chartColors.text} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="count" fill={chartColors.bar} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ width: "100%", height: 300 }}>
+            {isMounted && (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={projectStatus}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={chartColors.barGrid}
+                  />
+                  <XAxis dataKey="name" stroke={chartColors.text} />
+                  <YAxis stroke={chartColors.text} />
+                  <Tooltip
+                    contentStyle={
+                      isDarkMode
+                        ? { backgroundColor: "#1d1f21", border: "1px solid #374151", color: "#fff" }
+                        : undefined
+                    }
+                  />
+                  <Legend />
+                  <Bar dataKey="count" fill={chartColors.bar} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
         <div className="rounded-lg bg-white p-4 shadow dark:bg-dark-secondary md:col-span-2">
           <h3 className="mb-4 text-lg font-semibold dark:text-white">
