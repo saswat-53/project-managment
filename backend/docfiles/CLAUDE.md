@@ -89,6 +89,17 @@ Task (has assignedTo + createdBy - must be project members)
    - Task operations: Only project members can access (NOT just workspace members)
    - Uses middleware: `verifyJWT` → populate → check membership arrays
 
+6. **Automatic Project Status Recomputation**:
+   - Implemented in `controllers/task.controller.ts` via `recomputeProjectStatus(projectId)` helper
+   - Triggered automatically after every task CREATE, UPDATE, and DELETE
+   - Rules (evaluated in priority order):
+     1. No tasks in project → status = `"backlog"`
+     2. All tasks are `"done"` → status = `"completed"`
+     3. Any task is overdue (past dueDate and not "done") → status = `"backlog"`
+     4. Otherwise → status = `"in-progress"`
+   - **Important:** Manually setting `project.status` via PUT /api/project/:projectId will be overwritten the next time any task in that project is created/updated/deleted
+   - Uses `Project.updateOne({ _id: projectId }, { status: newStatus })` — bypasses Mongoose hooks intentionally
+
 ### Data Models - Complete Field Reference
 
 #### User Model (`models/user.model.ts`)
@@ -106,20 +117,22 @@ Task (has assignedTo + createdBy - must be project members)
   isEmailVerified: boolean (default: false)
   emailVerificationToken: string (optional, hashed)
   emailVerificationExpiry: Date (optional)
-  passwordResetToken: string (optional, hashed)
-  passwordResetExpiry: Date (optional, 20 minutes)
+  forgotPasswordToken: string (optional, hashed)
+  forgotPasswordExpiry: Date (optional, 20 minutes)
   createdAt: Date (auto-generated)
   updatedAt: Date (auto-generated)
 }
 ```
 
 **User Methods:**
-- `matchPassword(enteredPassword: string): Promise<boolean>` - Bcrypt compare
+- `isPasswordCorrect(password: string): Promise<boolean>` - Bcrypt compare (named `isPasswordCorrect`, not `matchPassword`)
 - `generateAccessToken(): string` - JWT with ACCESS_TOKEN_SECRET
 - `generateRefreshToken(): string` - JWT with REFRESH_TOKEN_SECRET
+- `generateTemporaryToken(): { unHashedToken, hashedToken, tokenExpiry }` - Creates a 20-byte hex token + SHA-256 hash + 20-minute expiry; used for email verification and password reset
 
 **Avatar Generation:**
-- Uses DiceBear API: `https://api.dicebear.com/6.x/thumbs/svg?seed=${email}`
+- Uses DiceBear API: `https://api.dicebear.com/6.x/thumbs/svg?seed=${crypto.randomUUID()}`
+- Seed is a random UUID (NOT the user's email) — generated via `crypto.randomUUID()`
 - Automatically generated in pre-save hook if avatarUrl not provided
 
 #### Workspace Model (`models/workspace.model.ts`)
@@ -157,13 +170,13 @@ Task (has assignedTo + createdBy - must be project members)
   workspace: ObjectId (required, reference to Workspace)
   members: ObjectId[] (required, subset of workspace.members, validated)
   tasks: ObjectId[] (references to Task documents)
-  status: "backlog" | "in-progress" | "completed" (default: "backlog")
-  startDate: Date (optional)
-  endDate: Date (optional)
+  status: "backlog" | "in-progress" | "completed" (default: "backlog", auto-computed from tasks — see Design Principle #6)
   createdAt: Date
   updatedAt: Date
 }
 ```
+
+**Note:** `startDate` and `endDate` do NOT exist in the schema. Project status is auto-recomputed by `recomputeProjectStatus()` in the task controller after every task mutation.
 
 **Stale Member Cleanup Hook (`findOneAndUpdate` pre-hook):**
 1. Fetches current project and its workspace
@@ -189,7 +202,6 @@ Task (has assignedTo + createdBy - must be project members)
   assignedTo: ObjectId (optional, single user reference, must be project member)
   createdBy: ObjectId (required, reference to User, must be project member)
   status: "todo" | "in-progress" | "done" (default: "todo")
-  priority: "low" | "medium" | "high" (default: "medium")
   dueDate: Date (optional)
   createdAt: Date
   updatedAt: Date
@@ -235,13 +247,13 @@ Task (has assignedTo + createdBy - must be project members)
 
 #### **Controllers (All with comprehensive JSDoc):**
 - `controllers/auth.controller.ts` - Registration, login, logout, email verification, password reset, token refresh
-- `controllers/workspace.controller.ts` - CRUD + bidirectional User↔Workspace sync + owner authorization
+- `controllers/workspace.controller.ts` - CRUD + bidirectional User↔Workspace sync + owner authorization + getWorkspaceMembers
 - `controllers/project.controller.ts` - CRUD + Workspace↔Project sync + member validation + stale cleanup
 - `controllers/task.controller.ts` - CRUD + Project↔Task sync + project member authorization
 
 #### **Routes:**
-- `routes/auth.route.ts` - Auth endpoints: /register, /login, /logout, /verify-email, /forgot-password, etc.
-- `routes/workspace.route.ts` - Workspace CRUD: /api/workspace/workspaces
+- `routes/auth.routes.ts` - Auth endpoints: /register, /login, /logout, /me, /verify-email, /forgot-password, /change-password, etc.
+- `routes/workspace.routes.ts` - Workspace CRUD: /api/workspace/workspaces, plus GET /:workspaceId/members
 - `routes/project.route.ts` - Project CRUD: /api/project/projects
 - `routes/task.route.ts` - Task CRUD: /api/task/tasks
 
@@ -692,6 +704,11 @@ workspace.members = memberIds.map(id => new mongoose.Types.ObjectId(id));
    - Clears `accessToken` and `refreshToken` cookies
    - Returns success message
 
+4. **GET /api/auth/me** (Authenticated)
+   - Returns current user's profile
+   - Excludes sensitive fields: `password`, `refreshToken`, `forgotPasswordToken`, `forgotPasswordExpiry`
+   - Used by the frontend `AuthProvider` to verify session validity on page load
+
 ### Password Reset
 
 1. **POST /api/auth/forgot-password**
@@ -879,6 +896,23 @@ Based on recent commits (from git log):
    - Workspace deletion restricted to owner only
    - Member validation improved
 
+6. **Auto-Compute Project Status from Tasks** (Commit: abf8a9d)
+   - Added `recomputeProjectStatus()` helper in `task.controller.ts`
+   - Project status now automatically recomputed after every task create, update, and delete
+   - Rules: no tasks → "backlog"; all done → "completed"; any overdue → "backlog"; else → "in-progress"
+   - Manual `project.status` updates are overwritten by next task mutation
+
+7. **Workspace Member Management Endpoint** (Commit: abf8a9d)
+   - Added `getWorkspaceMembers` controller to `workspace.controller.ts`
+   - New route: `GET /api/workspace/:workspaceId/members`
+   - Returns member list with profile fields: `_id, name, email, avatarUrl, role, position`
+   - Requires workspace membership for access
+
+8. **Frontend-Only Fixes** (Commits: 8f2ca88, f78d1e3, c57f7db, c9c608c)
+   - Change password UI, task edit modal, SVG avatar fix
+   - React 19 compat, chart rendering, dark mode improvements
+   - No backend schema or route changes in these commits
+
 ## Performance Considerations
 
 **Current Optimizations:**
@@ -961,8 +995,8 @@ Quick list:
 
 ---
 
-**Last Updated:** 2026-01-27 (based on codebase scan and git commits)
-**Codebase Version:** Main branch, commit 0d1f382
+**Last Updated:** 2026-03-05 (based on codebase scan and git commits)
+**Codebase Version:** Main branch, commit abf8a9d
 **Known Issues:** See "Known Bugs & Inconsistencies" section above
 
 For questions or issues, refer to other documentation files in `backend/docfiles/` directory.
