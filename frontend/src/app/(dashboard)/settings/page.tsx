@@ -1,7 +1,7 @@
 "use client";
 
 import Header from "@/components/Header";
-import { useGetCurrentUserQuery, useChangePasswordMutation } from "@/state/api";
+import { useGetCurrentUserQuery, useChangePasswordMutation, useSendVerificationEmailMutation } from "@/state/api";
 import { CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
@@ -9,17 +9,19 @@ import { useState } from "react";
 const Settings = () => {
   const { data: user, isLoading } = useGetCurrentUserQuery();
   const [changePassword, { isLoading: isChanging }] = useChangePasswordMutation();
+  const [sendVerificationEmail, { isLoading: isSending }] = useSendVerificationEmailMutation();
 
   const [form, setForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
   const [showPasswords, setShowPasswords] = useState({ old: false, new: false, confirm: false });
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [verifyFeedback, setVerifyFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   if (isLoading) return <div className="p-8 dark:text-white">Loading...</div>;
   if (!user) return <div className="p-8 dark:text-white">Could not load user data.</div>;
 
   const labelStyles = "block text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400";
   const valueStyles = "mt-1 block w-full rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-800 dark:border-stroke-dark dark:bg-dark-tertiary dark:text-white";
-  const inputStyles = "mt-1 block w-full rounded-md border border-gray-200 bg-white p-3 text-sm text-gray-800 outline-none focus:border-blue-primary focus:ring-1 focus:ring-blue-primary dark:border-stroke-dark dark:bg-dark-tertiary dark:text-white dark:focus:border-blue-400";
+  const inputStyles = "mt-1 block w-full rounded-md border border-gray-200 bg-white p-3 text-sm text-gray-800 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 dark:border-stroke-dark dark:bg-dark-tertiary dark:text-white dark:focus:border-amber-400";
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +48,16 @@ const Settings = () => {
   const toggleVisibility = (field: "old" | "new" | "confirm") =>
     setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
 
+  const handleSendVerificationEmail = async () => {
+    setVerifyFeedback(null);
+    try {
+      await sendVerificationEmail().unwrap();
+      setVerifyFeedback({ type: "success", message: "Verification email sent. Check your inbox." });
+    } catch (err: any) {
+      setVerifyFeedback({ type: "error", message: err?.data?.message ?? "Failed to send verification email." });
+    }
+  };
+
   return (
     <div className="p-8">
       <Header name="Settings" />
@@ -63,7 +75,7 @@ const Settings = () => {
               unoptimized
             />
           ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-primary text-xl font-bold text-white">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-400 text-xl font-bold text-zinc-950">
               {user.name?.charAt(0).toUpperCase() ?? "?"}
             </div>
           )}
@@ -96,7 +108,7 @@ const Settings = () => {
         {/* Email Verified */}
         <div>
           <label className={labelStyles}>Email Verified</label>
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-1 flex items-center gap-3">
             {user.isEmailVerified ? (
               <>
                 <CheckCircle size={18} className="text-green-500" />
@@ -106,9 +118,21 @@ const Settings = () => {
               <>
                 <XCircle size={18} className="text-red-500" />
                 <span className="text-sm text-red-600 dark:text-red-400">Not verified</span>
+                <button
+                  onClick={handleSendVerificationEmail}
+                  disabled={isSending}
+                  className="ml-1 rounded border border-amber-400 px-3 py-1 text-xs font-medium text-amber-600 transition-all hover:bg-amber-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50 dark:text-amber-400 dark:hover:text-zinc-950"
+                >
+                  {isSending ? "Sending..." : "Send verification email"}
+                </button>
               </>
             )}
           </div>
+          {verifyFeedback && (
+            <p className={`mt-2 text-xs ${verifyFeedback.type === "success" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+              {verifyFeedback.message}
+            </p>
+          )}
         </div>
 
         {/* Divider */}
@@ -202,7 +226,7 @@ const Settings = () => {
             <button
               type="submit"
               disabled={isChanging}
-              className="rounded-md bg-blue-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-md bg-amber-400 px-5 py-2.5 text-sm font-medium text-zinc-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isChanging ? "Updating..." : "Update Password"}
             </button>

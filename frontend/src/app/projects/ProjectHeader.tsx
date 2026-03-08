@@ -32,7 +32,7 @@ const ProjectHeader = ({ activeTab, setActiveTab, onAddMember }: Props) => {
           name="Product Design Development"
           buttonComponent={
             <button
-              className="flex items-center rounded-md bg-blue-primary px-3 py-2 text-white hover:bg-blue-600"
+              className="flex items-center rounded-md bg-amber-400 px-3 py-2 text-zinc-950 hover:bg-amber-300"
               onClick={() => setIsModalNewProjectOpen(true)}
             >
               <PlusSquare className="mr-2 h-5 w-5" /> Create Project
@@ -79,7 +79,7 @@ const ProjectHeader = ({ activeTab, setActiveTab, onAddMember }: Props) => {
           {onAddMember && (
             <button
               onClick={onAddMember}
-              className="flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-blue-primary hover:text-blue-primary dark:border-stroke-dark dark:text-neutral-400 dark:hover:border-blue-400 dark:hover:text-blue-400"
+              className="flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-amber-400 hover:text-amber-500 dark:border-stroke-dark dark:text-neutral-400 dark:hover:border-amber-400 dark:hover:text-amber-400"
               title="Add member to project"
             >
               <UserPlus className="h-4 w-4" />
@@ -112,8 +112,8 @@ const TabButton = ({ name, icon, setActiveTab, activeTab }: TabButtonProps) => {
 
   return (
     <button
-      className={`relative flex items-center gap-2 px-1 py-2 text-gray-500 after:absolute after:-bottom-[9px] after:left-0 after:h-[1px] after:w-full hover:text-blue-600 dark:text-neutral-500 dark:hover:text-white sm:px-2 lg:px-4 ${
-        isActive ? "text-blue-600 after:bg-blue-600 dark:text-white" : ""
+      className={`relative flex items-center gap-2 px-1 py-2 text-gray-500 after:absolute after:-bottom-[9px] after:left-0 after:h-[1px] after:w-full hover:text-amber-500 dark:text-neutral-500 dark:hover:text-white sm:px-2 lg:px-4 ${
+        isActive ? "text-amber-500 after:bg-amber-400 dark:text-white" : ""
       }`}
       onClick={() => setActiveTab(name)}
     >

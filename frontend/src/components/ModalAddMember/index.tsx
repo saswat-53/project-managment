@@ -91,7 +91,7 @@ const ModalAddMember = ({ isOpen, onClose, projectId }: Props) => {
                   type="checkbox"
                   checked={selected.includes(member._id)}
                   onChange={() => toggle(member._id)}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-primary"
+                  className="h-4 w-4 rounded border-gray-300 accent-amber-400"
                 />
                 <div className="flex items-center gap-2">
                   {member.avatarUrl ? (
@@ -101,7 +101,7 @@ const ModalAddMember = ({ isOpen, onClose, projectId }: Props) => {
                       className="h-8 w-8 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-primary text-xs font-bold text-white">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-zinc-950">
                       {member.name.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -118,7 +118,7 @@ const ModalAddMember = ({ isOpen, onClose, projectId }: Props) => {
         <button
           type="submit"
           disabled={selected.length === 0 || isLoading}
-          className="mt-2 flex w-full justify-center rounded-md border border-transparent bg-blue-primary px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 flex w-full justify-center rounded-md border border-transparent bg-amber-400 px-4 py-2 text-base font-medium text-zinc-950 shadow-sm hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading
             ? "Adding..."
