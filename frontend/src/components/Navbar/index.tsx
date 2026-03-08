@@ -31,14 +31,14 @@ const Navbar = () => {
   };
 
   return (
-    <div className="flex items-center justify-between bg-white px-4 py-3 dark:bg-black">
+    <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
       {/* Left — sidebar toggle */}
       <div className="flex items-center gap-8">
         {!isSidebarCollapsed ? null : (
           <button
             onClick={() => dispatch(setIsSidebarCollapsed(!isSidebarCollapsed))}
           >
-            <Menu className="h-8 w-8 dark:text-white" />
+            <Menu className="h-7 w-7 text-gray-500 hover:text-gray-800 dark:text-zinc-400 dark:hover:text-white" />
           </button>
         )}
       </div>
@@ -47,49 +47,41 @@ const Navbar = () => {
       <div className="flex items-center">
         <button
           onClick={() => dispatch(setIsDarkMode(!isDarkMode))}
-          className={
-            isDarkMode
-              ? `rounded p-2 dark:hover:bg-gray-700`
-              : `rounded p-2 hover:bg-gray-100`
-          }
+          className="rounded p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
         >
           {isDarkMode ? (
-            <Sun className="h-6 w-6 cursor-pointer dark:text-white" />
+            <Sun className="h-5 w-5 cursor-pointer" />
           ) : (
-            <Moon className="h-6 w-6 cursor-pointer dark:text-white" />
+            <Moon className="h-5 w-5 cursor-pointer" />
           )}
         </button>
         <Link
           href="/settings"
-          className={
-            isDarkMode
-              ? `h-min w-min rounded p-2 dark:hover:bg-gray-700`
-              : `h-min w-min rounded p-2 hover:bg-gray-100`
-          }
+          className="h-min w-min rounded p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
         >
-          <Settings className="h-6 w-6 cursor-pointer dark:text-white" />
+          <Settings className="h-5 w-5 cursor-pointer" />
         </Link>
-        <div className="ml-2 mr-5 hidden min-h-[2em] w-[0.1rem] bg-gray-200 md:inline-block" />
+        <div className="ml-2 mr-5 hidden min-h-[2em] w-px bg-gray-200 dark:bg-zinc-800 md:inline-block" />
         <div className="hidden items-center justify-between md:flex">
-          <div className="align-center flex h-9 w-9 justify-center">
+          <div className="align-center flex h-8 w-8 justify-center">
             {currentUser?.avatarUrl ? (
               <Image
                 src={currentUser.avatarUrl}
                 alt={currentUser.name}
-                width={36}
-                height={36}
+                width={32}
+                height={32}
                 className="h-full w-full rounded-full object-cover"
                 unoptimized
               />
             ) : (
-              <User className="h-6 w-6 cursor-pointer self-center rounded-full dark:text-white" />
+              <User className="h-5 w-5 cursor-pointer self-center rounded-full text-gray-500 dark:text-zinc-400" />
             )}
           </div>
-          <span className="mx-3 text-gray-800 dark:text-white">
+          <span className="mx-3 text-sm text-gray-700 dark:text-zinc-300">
             {currentUser?.name}
           </span>
           <button
-            className="hidden rounded bg-blue-400 px-4 py-2 text-xs font-bold text-white hover:bg-blue-500 md:block"
+            className="hidden border border-amber-400 px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-amber-600 transition-all hover:bg-amber-400 hover:text-zinc-950 dark:text-amber-400 dark:hover:text-zinc-950 md:block"
             onClick={handleSignOut}
           >
             Sign out

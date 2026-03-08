@@ -46,7 +46,7 @@ const Sidebar = () => {
   };
 
   const sidebarClassNames = `fixed flex flex-col h-[100%] justify-between shadow-xl
-    transition-all duration-300 h-full z-40 dark:bg-black overflow-y-auto bg-white
+    transition-all duration-300 h-full z-40 overflow-y-auto bg-white dark:bg-zinc-950
     ${isSidebarCollapsed ? "w-0 hidden" : "w-64"}
   `;
 
@@ -54,9 +54,14 @@ const Sidebar = () => {
     <div className={sidebarClassNames}>
       <div className="flex h-[100%] w-full flex-col justify-start">
         {/* TOP LOGO */}
-        <div className="z-50 flex min-h-[56px] w-64 items-center justify-between bg-white px-6 pt-3 dark:bg-black">
-          <div className="text-xl font-bold text-gray-800 dark:text-white">
-            ProjectFlow
+        <div className="z-50 flex min-h-[56px] w-64 items-center justify-between bg-white px-6 pt-3 dark:bg-zinc-950">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center border-2 border-amber-400">
+              <div className="h-2.5 w-2.5 bg-amber-400" />
+            </div>
+            <span className="text-base font-bold uppercase tracking-widest text-gray-900 dark:text-white">
+              ProjectFlow
+            </span>
           </div>
           {isSidebarCollapsed ? null : (
             <button
@@ -65,24 +70,24 @@ const Sidebar = () => {
                 dispatch(setIsSidebarCollapsed(!isSidebarCollapsed))
               }
             >
-              <X className="h-6 w-6 text-gray-800 hover:text-gray-500 dark:text-white" />
+              <X className="h-6 w-6 text-gray-400 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-white" />
             </button>
           )}
         </div>
 
         {/* ACTIVE WORKSPACE */}
-        <div className="flex items-center justify-between border-y-[1.5px] border-gray-200 px-8 py-4 dark:border-gray-700">
+        <div className="flex items-center justify-between border-y border-gray-200 px-8 py-4 dark:border-zinc-800">
           <div className="min-w-0">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400 dark:text-zinc-500">
               Workspace
             </p>
-            <p className="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">
+            <p className="truncate text-sm font-semibold text-gray-800 dark:text-zinc-200">
               {activeWorkspace?.name ?? (activeWorkspaceId ? "Loading..." : "None selected")}
             </p>
           </div>
           <Link
             href="/workspaces"
-            className="ml-2 shrink-0 rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
+            className="ml-2 shrink-0 border border-gray-300 px-2 py-1 text-xs text-gray-500 transition-colors hover:border-amber-400 hover:text-amber-500 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
           >
             Switch
           </Link>
@@ -98,13 +103,13 @@ const Sidebar = () => {
         {/* PROJECTS LINKS */}
         <button
           onClick={() => setShowProjects((prev) => !prev)}
-          className="flex w-full items-center justify-between px-8 py-3 text-gray-500"
+          className="flex w-full items-center justify-between px-8 py-3 text-[10px] uppercase tracking-[0.2em] text-gray-400 transition-colors hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300"
         >
           <span>Projects</span>
           {showProjects ? (
-            <ChevronUp className="h-5 w-5" />
+            <ChevronUp className="h-4 w-4" />
           ) : (
-            <ChevronDown className="h-5 w-5" />
+            <ChevronDown className="h-4 w-4" />
           )}
         </button>
         {showProjects &&
@@ -119,11 +124,11 @@ const Sidebar = () => {
       </div>
 
       {/* BOTTOM — user sign out (mobile) */}
-      <div className="z-10 mt-32 flex w-full flex-col items-center gap-4 bg-white px-8 py-4 dark:bg-black md:hidden">
+      <div className="z-10 mt-32 flex w-full flex-col items-center gap-4 border-t border-gray-200 bg-white px-8 py-4 dark:border-zinc-800 dark:bg-zinc-950 md:hidden">
         <div className="flex w-full items-center">
-          <User className="h-6 w-6 cursor-pointer self-center rounded-full dark:text-white" />
+          <User className="h-6 w-6 cursor-pointer self-center rounded-full text-gray-400 dark:text-zinc-400" />
           <button
-            className="ml-auto rounded bg-blue-400 px-4 py-2 text-xs font-bold text-white hover:bg-blue-500"
+            className="ml-auto border border-amber-400 px-4 py-2 text-xs uppercase tracking-[0.15em] text-amber-600 transition-all hover:bg-amber-400 hover:text-zinc-950 dark:text-amber-400 dark:hover:text-zinc-950"
             onClick={handleSignOut}
           >
             Sign out
@@ -148,15 +153,19 @@ const SidebarLink = ({ href, icon: Icon, label }: SidebarLinkProps) => {
   return (
     <Link href={href} className="w-full">
       <div
-        className={`relative flex cursor-pointer items-center gap-3 transition-colors hover:bg-gray-100 dark:bg-black dark:hover:bg-gray-700 ${
-          isActive ? "bg-gray-100 text-white dark:bg-gray-600" : ""
+        className={`relative flex cursor-pointer items-center gap-3 transition-colors hover:bg-gray-100 dark:hover:bg-zinc-800/60 ${
+          isActive ? "bg-gray-100 dark:bg-zinc-800" : ""
         } justify-start px-8 py-3`}
       >
         {isActive && (
-          <div className="absolute left-0 top-0 h-[100%] w-[5px] bg-blue-200" />
+          <div className="absolute left-0 top-0 h-full w-[3px] bg-amber-400" />
         )}
-        <Icon className="h-6 w-6 text-gray-800 dark:text-gray-100" />
-        <span className="font-medium text-gray-800 dark:text-gray-100">
+        <Icon
+          className={`h-5 w-5 ${isActive ? "text-amber-500 dark:text-amber-400" : "text-gray-500 dark:text-zinc-400"}`}
+        />
+        <span
+          className={`text-sm font-medium ${isActive ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-zinc-400"}`}
+        >
           {label}
         </span>
       </div>
