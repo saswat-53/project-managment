@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
-import { useLoginMutation } from "@/state/api";
+import { api, useLoginMutation } from "@/state/api";
 import { setActiveWorkspaceId } from "@/state";
 import { useAppDispatch } from "@/app/redux";
 
@@ -24,7 +24,8 @@ export default function LoginPage() {
     try {
       await login({ email, password }).unwrap();
       dispatch(setActiveWorkspaceId(null));
-      router.push("/workspaces");
+      dispatch(api.util.resetApiState());
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err?.data?.message || "Invalid credentials. Please try again.");
     }

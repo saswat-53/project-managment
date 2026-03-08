@@ -204,6 +204,13 @@ export const api = createApi({
         body: { newPassword },
       }),
     }),
+    sendVerificationEmail: build.mutation<{ message: string; verifyUrl?: string }, void>({
+      query: () => ({ url: "auth/send-verification-email", method: "POST" }),
+    }),
+    verifyEmail: build.mutation<{ message: string }, string>({
+      query: (token) => ({ url: `auth/verify-email/${token}`, method: "GET" }),
+      invalidatesTags: ["CurrentUser"],
+    }),
   }),
 });
 
@@ -226,4 +233,6 @@ export const {
   useChangePasswordMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useSendVerificationEmailMutation,
+  useVerifyEmailMutation,
 } = api;

@@ -20,6 +20,11 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    if (!currentUser.isEmailVerified) {
+      router.push("/verify-email");
+      return;
+    }
+
     if (!activeWorkspaceId) {
       router.push("/workspaces");
     }
@@ -33,7 +38,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (isError || !currentUser || !activeWorkspaceId) return null;
+  if (isError || !currentUser || !currentUser.isEmailVerified || !activeWorkspaceId) return null;
 
   return <>{children}</>;
 };
