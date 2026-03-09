@@ -50,6 +50,7 @@ const Project = ({ params }: Props) => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onAddMember={() => setIsModalAddMemberOpen(true)}
+        projectId={id}
       />
 
       {isLoading && (

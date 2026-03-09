@@ -4,9 +4,9 @@ import { useAppSelector } from "@/app/redux";
 import Header from "@/components/Header";
 import ModalEditTask from "@/components/ModalEditTask";
 import { dataGridClassNames, dataGridSxStyles } from "@/lib/utils";
-import { Task, useGetTasksQuery } from "@/state/api";
+import { Task, useGetTasksQuery, useDeleteTaskMutation } from "@/state/api";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 
 type Props = {
@@ -18,6 +18,8 @@ const TableView = ({ id, setIsModalNewTaskOpen }: Props) => {
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
   const { data: tasks } = useGetTasksQuery({ projectId: id });
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteTask, { isLoading: isDeleting }] = useDeleteTaskMutation();
 
   const columns: GridColDef[] = [
     { field: "title", headerName: "Title", width: 150 },
@@ -48,18 +50,47 @@ const TableView = ({ id, setIsModalNewTaskOpen }: Props) => {
     {
       field: "actions",
       headerName: "",
-      width: 60,
+      width: 100,
       sortable: false,
       renderCell: (params) => {
         const isDone = params.row.status === "done";
+        const taskId = params.row._id as string;
+        const isConfirming = confirmDeleteId === taskId;
         return (
-          <button
-            className={isDone ? "cursor-not-allowed text-gray-300 dark:text-neutral-700" : "text-gray-400 hover:text-blue-500 dark:hover:text-blue-400"}
-            onClick={() => !isDone && setEditingTask(params.row as Task)}
-            title={isDone ? "Cannot edit a completed task" : "Edit task"}
-          >
-            <Pencil size={16} />
-          </button>
+          <div className="flex h-full justify-center items-center gap-2">
+            <button
+              className={isDone ? "cursor-not-allowed text-gray-300 dark:text-neutral-700" : "text-gray-400 hover:text-blue-500 dark:hover:text-blue-400"}
+              onClick={() => !isDone && setEditingTask(params.row as Task)}
+              title={isDone ? "Cannot edit a completed task" : "Edit task"}
+            >
+              <Pencil size={16} />
+            </button>
+            {isConfirming ? (
+              <>
+                <button
+                  onClick={() => { deleteTask(taskId); setConfirmDeleteId(null); }}
+                  disabled={isDeleting}
+                  className="text-xs font-medium text-red-500 hover:text-red-700 disabled:opacity-50"
+                >
+                  Confirm
+                </button>
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </>
+            ) : (
+              <button
+                className="text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
+                onClick={() => setConfirmDeleteId(taskId)}
+                title="Delete task"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+          </div>
         );
       },
     },

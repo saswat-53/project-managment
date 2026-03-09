@@ -1,10 +1,10 @@
 "use client";
 
-import { Task } from "@/state/api";
+import { Task, useDeleteTaskMutation } from "@/state/api";
 import { format } from "date-fns";
 import Image from "next/image";
 import React, { useState } from "react";
-import { CalendarDays, Pencil, User } from "lucide-react";
+import { CalendarDays, Pencil, Trash2, User } from "lucide-react";
 import ModalEditTask from "@/components/ModalEditTask";
 
 type Props = {
@@ -25,9 +25,15 @@ const STATUS_BORDER: Record<string, string> = {
 
 const TaskCard = ({ task }: Props) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
+  const [deleteTask, { isLoading: isDeleting }] = useDeleteTaskMutation();
   const status = STATUS_CONFIG[task.status] ?? STATUS_CONFIG["todo"];
   const borderColor = STATUS_BORDER[task.status] ?? STATUS_BORDER["todo"];
   const isDone = task.status === "done";
+
+  const handleDelete = async () => {
+    await deleteTask(task._id);
+  };
 
   return (
     <>
@@ -42,24 +48,48 @@ const TaskCard = ({ task }: Props) => {
         className={`group relative flex flex-col rounded-lg border-l-4 bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-dark-secondary ${borderColor}`}
       >
         <div className="flex flex-1 flex-col p-4">
-          {/* Top row — status badge + edit */}
+          {/* Top row — status badge + actions */}
           <div className="mb-3 flex items-center justify-between">
             <span
               className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${status.color} ${status.bg} ${status.darkBg}`}
             >
               {status.label}
             </span>
-            <button
-              className={`opacity-0 transition-opacity group-hover:opacity-100 ${
-                isDone
-                  ? "cursor-not-allowed text-gray-300 dark:text-neutral-700"
-                  : "text-gray-400 hover:text-amber-500 dark:text-neutral-500 dark:hover:text-amber-400"
-              }`}
-              onClick={() => !isDone && setIsEditOpen(true)}
-              title={isDone ? "Cannot edit a completed task" : "Edit task"}
-            >
-              <Pencil size={14} />
-            </button>
+            {isDeleteConfirming ? (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="rounded px-1.5 py-0.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50"
+                >
+                  {isDeleting ? "..." : "Delete"}
+                </button>
+                <button
+                  onClick={() => setIsDeleteConfirming(false)}
+                  disabled={isDeleting}
+                  className="rounded px-1.5 py-0.5 text-xs text-gray-500 hover:text-gray-700 dark:text-neutral-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  className={isDone ? "cursor-not-allowed text-gray-300 dark:text-neutral-700" : "text-gray-400 hover:text-amber-500 dark:text-neutral-500 dark:hover:text-amber-400"}
+                  onClick={() => !isDone && setIsEditOpen(true)}
+                  title={isDone ? "Cannot edit a completed task" : "Edit task"}
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  className="text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
+                  onClick={() => setIsDeleteConfirming(true)}
+                  title="Delete task"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Title */}

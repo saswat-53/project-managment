@@ -16,7 +16,7 @@ export interface Workspace {
   _id: string;
   name: string;
   description?: string;
-  owner: string;
+  owner: string | { _id: string; name: string; email: string };
   members: string[];
   inviteCode: string;
 }
@@ -91,6 +91,13 @@ export const api = createApi({
       query: (body) => ({ url: "workspace/workspaces", method: "POST", body }),
       invalidatesTags: ["Workspaces"],
     }),
+    deleteWorkspace: build.mutation<{ message: string }, string>({
+      query: (workspaceId) => ({
+        url: `workspace/${workspaceId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Workspaces"],
+    }),
     getWorkspaceMembers: build.query<User[], string>({
       query: (workspaceId) => `workspace/${workspaceId}/members`,
       transformResponse: (res: { success: boolean; data: User[] }) => res.data,
@@ -125,6 +132,23 @@ export const api = createApi({
         body,
       }),
       invalidatesTags: ["Projects"],
+    }),
+    deleteProject: build.mutation<{ message: string }, string>({
+      query: (projectId) => ({
+        url: `project/${projectId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Projects"],
+    }),
+    deleteTask: build.mutation<{ message: string }, string>({
+      query: (taskId) => ({
+        url: `task/${taskId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, taskId) => [
+        { type: "Tasks", id: taskId },
+        "Projects",
+      ],
     }),
 
     // Tasks
@@ -230,6 +254,9 @@ export const {
   useUpdateTaskMutation,
   useGetProjectByIdQuery,
   useUpdateProjectMutation,
+  useDeleteProjectMutation,
+  useDeleteTaskMutation,
+  useDeleteWorkspaceMutation,
   useChangePasswordMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,

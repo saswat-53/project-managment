@@ -1,23 +1,29 @@
 "use client";
 
 import React, { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   useGetWorkspacesQuery,
+  useGetCurrentUserQuery,
   useCreateWorkspaceMutation,
+  useDeleteWorkspaceMutation,
   useLogoutMutation,
   Workspace,
 } from "@/state/api";
 import { setActiveWorkspaceId } from "@/state";
-import { useAppDispatch } from "@/app/redux";
+import { useAppDispatch, useAppSelector } from "@/app/redux";
 
 export default function WorkspacesPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const activeWorkspaceId = useAppSelector((state) => state.global.activeWorkspaceId);
 
   const { data: workspaces, isLoading, isError } = useGetWorkspacesQuery();
+  const { data: currentUser } = useGetCurrentUserQuery();
   const [createWorkspace, { isLoading: isCreating }] =
     useCreateWorkspaceMutation();
+  const [deleteWorkspace] = useDeleteWorkspaceMutation();
   const [logout] = useLogoutMutation();
 
   const [showModal, setShowModal] = useState(false);
@@ -40,6 +46,13 @@ export default function WorkspacesPage() {
       setShowModal(false);
     } catch (err: any) {
       setCreateError(err?.data?.message || "Failed to create workspace.");
+    }
+  };
+
+  const handleDeleteWorkspace = async (workspaceId: string) => {
+    await deleteWorkspace(workspaceId).unwrap();
+    if (activeWorkspaceId === workspaceId) {
+      dispatch(setActiveWorkspaceId(null));
     }
   };
 
@@ -150,6 +163,8 @@ export default function WorkspacesPage() {
                 workspace={ws}
                 index={i}
                 onSelect={handleSelect}
+                currentUserId={currentUser?._id}
+                onDelete={handleDeleteWorkspace}
               />
             ))}
           </div>
@@ -233,15 +248,38 @@ function WorkspaceCard({
   workspace,
   index,
   onSelect,
+  currentUserId,
+  onDelete,
 }: {
   workspace: Workspace;
   index: number;
   onSelect: (ws: Workspace) => void;
+  currentUserId?: string;
+  onDelete: (workspaceId: string) => Promise<void>;
 }) {
+  const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const ownerId = typeof workspace.owner === "string" ? workspace.owner : workspace.owner._id;
+  const isOwner = !!currentUserId && currentUserId === ownerId;
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      await onDelete(workspace._id);
+    } catch (err: any) {
+      setDeleteError(err?.data?.message || "Failed to delete.");
+      setIsDeleting(false);
+      setIsDeleteConfirming(false);
+    }
+  };
+
   return (
-    <button
-      onClick={() => onSelect(workspace)}
-      className="group relative border border-zinc-800 bg-zinc-900/50 p-7 text-left transition-all duration-200 hover:border-amber-400/50 hover:bg-zinc-900"
+    <div
+      onClick={() => !isDeleteConfirming && onSelect(workspace)}
+      className="group relative cursor-pointer border border-zinc-800 bg-zinc-900/50 p-7 text-left transition-all duration-200 hover:border-amber-400/50 hover:bg-zinc-900"
     >
       {/* Index badge */}
       <div className="absolute right-4 top-4 text-xs text-zinc-700 transition-colors group-hover:text-amber-400/50">
@@ -269,15 +307,54 @@ function WorkspaceCard({
         </p>
       )}
 
+      {deleteError && (
+        <p className="mb-2 text-xs text-red-400">{deleteError}</p>
+      )}
+
       {/* Footer */}
-      <div className="flex items-center justify-between border-t border-zinc-800 pt-4 transition-colors group-hover:border-zinc-700">
-        <span className="text-xs uppercase tracking-[0.15em] text-zinc-500">
-          {workspace.members.length} member{workspace.members.length !== 1 ? "s" : ""}
-        </span>
+      <div
+        className="flex items-center justify-between border-t border-zinc-800 pt-4 transition-colors group-hover:border-zinc-700"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Left — delete (owners) or member count (non-owners) */}
+        {isOwner ? (
+          isDeleteConfirming ? (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="text-xs uppercase tracking-[0.15em] text-red-400 hover:text-red-300 disabled:opacity-50"
+              >
+                {isDeleting ? "..." : "Confirm"}
+              </button>
+              <button
+                onClick={() => { setIsDeleteConfirming(false); setDeleteError(""); }}
+                disabled={isDeleting}
+                className="text-xs uppercase tracking-[0.15em] text-zinc-600 hover:text-zinc-400"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsDeleteConfirming(true)}
+              className="text-zinc-600 opacity-0 transition-all group-hover:opacity-100 hover:text-red-400"
+              title="Delete workspace"
+            >
+              <Trash2 size={14} />
+            </button>
+          )
+        ) : (
+          <span className="text-xs uppercase tracking-[0.15em] text-zinc-500">
+            {workspace.members.length} member{workspace.members.length !== 1 ? "s" : ""}
+          </span>
+        )}
+
+        {/* Right — Enter */}
         <span className="text-xs uppercase tracking-[0.15em] text-zinc-600 transition-colors group-hover:text-amber-400">
           Enter →
         </span>
       </div>
-    </button>
+    </div>
   );
 }
