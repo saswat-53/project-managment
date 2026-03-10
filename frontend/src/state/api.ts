@@ -103,6 +103,16 @@ export const api = createApi({
       transformResponse: (res: { success: boolean; data: User[] }) => res.data,
       providesTags: ["Users"],
     }),
+    removeWorkspaceMember: build.mutation<
+      { message: string },
+      { workspaceId: string; memberId: string }
+    >({
+      query: ({ workspaceId, memberId }) => ({
+        url: `workspace/${workspaceId}/members/${memberId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Users", "Workspaces"],
+    }),
 
     // Projects
     getProjectById: build.query<Project & { members: User[] }, string>({
@@ -136,6 +146,16 @@ export const api = createApi({
     deleteProject: build.mutation<{ message: string }, string>({
       query: (projectId) => ({
         url: `project/${projectId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Projects"],
+    }),
+    removeProjectMember: build.mutation<
+      { message: string },
+      { projectId: string; memberId: string }
+    >({
+      query: ({ projectId, memberId }) => ({
+        url: `project/${projectId}/members/${memberId}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Projects"],
@@ -235,6 +255,25 @@ export const api = createApi({
       query: (token) => ({ url: `auth/verify-email/${token}`, method: "GET" }),
       invalidatesTags: ["CurrentUser"],
     }),
+
+    // Workspace invites
+    inviteToWorkspace: build.mutation<
+      { message: string; inviteUrl: string; recipientExists: boolean },
+      { workspaceId: string; email: string }
+    >({
+      query: ({ workspaceId, email }) => ({
+        url: `workspace/${workspaceId}/invite`,
+        method: "POST",
+        body: { email },
+      }),
+    }),
+    joinWorkspace: build.mutation<
+      { message: string; workspace: Workspace },
+      string
+    >({
+      query: (token) => ({ url: `workspace/join/${token}`, method: "POST" }),
+      invalidatesTags: ["Workspaces"],
+    }),
   }),
 });
 
@@ -262,4 +301,8 @@ export const {
   useResetPasswordMutation,
   useSendVerificationEmailMutation,
   useVerifyEmailMutation,
+  useInviteToWorkspaceMutation,
+  useJoinWorkspaceMutation,
+  useRemoveWorkspaceMemberMutation,
+  useRemoveProjectMemberMutation,
 } = api;

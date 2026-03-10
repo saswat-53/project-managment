@@ -5,6 +5,7 @@ import {
   getProjectById,
   updateProject,
   deleteProject,
+  removeProjectMember,
 } from "../controllers/project.controller";
 import { verifyJWT } from "../middlewares/auth";
 
@@ -240,6 +241,7 @@ router.get("/:projectId", verifyJWT, getProjectById);
  *         description: Project not found
  */
 router.put("/:projectId", verifyJWT, updateProject);
+router.delete("/:projectId/members/:memberId", verifyJWT, removeProjectMember);
 
 /**
  * @swagger

@@ -367,6 +367,59 @@ export const updateProject = async (req: Request, res: Response) => {
 };
 
 /**
+ * Remove a member from a project.
+ * User must be a workspace member to perform this action.
+ * Any workspace member can remove project members (not restricted to owner).
+ *
+ * @route DELETE /api/project/:projectId/members/:memberId
+ * @access Private (workspace member)
+ */
+export const removeProjectMember = async (req: Request, res: Response) => {
+  try {
+    const { projectId, memberId } = req.params;
+    const userId = (req as any).user._id;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(projectId) ||
+      !mongoose.Types.ObjectId.isValid(memberId)
+    ) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+
+    const project = await Project.findById(projectId).populate("workspace");
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    const workspace: any = project.workspace;
+    const isWorkspaceMember = workspace.members
+      .map((id: any) => id.toString())
+      .includes(userId.toString());
+
+    if (!isWorkspaceMember) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const isProjectMember = project.members
+      .map((id) => id.toString())
+      .includes(memberId);
+
+    if (!isProjectMember) {
+      return res.status(404).json({ message: "User is not a member of this project" });
+    }
+
+    project.members = project.members.filter((id) => id.toString() !== memberId);
+    project.workspace = workspace._id;
+    await project.save();
+
+    return res.status(200).json({ message: "Member removed from project successfully" });
+  } catch (error) {
+    console.error("Remove project member error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
  * Delete a project.
  * User must be a workspace member to delete.
  * Cascade delete automatically handled by Project pre-delete hook.

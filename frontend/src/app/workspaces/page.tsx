@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   useGetWorkspacesQuery,
@@ -13,6 +13,7 @@ import {
 } from "@/state/api";
 import { setActiveWorkspaceId } from "@/state";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
+import ModalInviteMember from "@/components/ModalInviteMember";
 
 export default function WorkspacesPage() {
   const router = useRouter();
@@ -30,6 +31,8 @@ export default function WorkspacesPage() {
   const [wsName, setWsName] = useState("");
   const [wsDesc, setWsDesc] = useState("");
   const [createError, setCreateError] = useState("");
+
+  const [invitingWorkspaceId, setInvitingWorkspaceId] = useState<string | null>(null);
 
   const handleSelect = (workspace: Workspace) => {
     dispatch(setActiveWorkspaceId(workspace._id));
@@ -165,11 +168,21 @@ export default function WorkspacesPage() {
                 onSelect={handleSelect}
                 currentUserId={currentUser?._id}
                 onDelete={handleDeleteWorkspace}
+                onInvite={(id) => setInvitingWorkspaceId(id)}
               />
             ))}
           </div>
         )}
       </main>
+
+      {/* ── Invite Modal ───────────────────────────────────── */}
+      {invitingWorkspaceId && (
+        <ModalInviteMember
+          workspaceId={invitingWorkspaceId}
+          isOpen={!!invitingWorkspaceId}
+          onClose={() => setInvitingWorkspaceId(null)}
+        />
+      )}
 
       {/* ── Create Modal ───────────────────────────────────── */}
       {showModal && (
@@ -250,12 +263,14 @@ function WorkspaceCard({
   onSelect,
   currentUserId,
   onDelete,
+  onInvite,
 }: {
   workspace: Workspace;
   index: number;
   onSelect: (ws: Workspace) => void;
   currentUserId?: string;
   onDelete: (workspaceId: string) => Promise<void>;
+  onInvite: (workspaceId: string) => void;
 }) {
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -336,13 +351,22 @@ function WorkspaceCard({
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => setIsDeleteConfirming(true)}
-              className="text-zinc-600 opacity-0 transition-all group-hover:opacity-100 hover:text-red-400"
-              title="Delete workspace"
-            >
-              <Trash2 size={14} />
-            </button>
+            <div className="flex items-center gap-3 opacity-0 transition-all group-hover:opacity-100">
+              <button
+                onClick={(e) => { e.stopPropagation(); onInvite(workspace._id); }}
+                className="text-zinc-600 hover:text-amber-400"
+                title="Invite member"
+              >
+                <UserPlus size={14} />
+              </button>
+              <button
+                onClick={() => setIsDeleteConfirming(true)}
+                className="text-zinc-600 hover:text-red-400"
+                title="Delete workspace"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           )
         ) : (
           <span className="text-xs uppercase tracking-[0.15em] text-gray-500 dark:text-zinc-500">

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Workspace, IWorkspace } from "../models/workspace.model";
+import { WorkspaceInvite } from "../models/workspaceInvite.model";
 import { User } from "../models/user.model";
 import { Project } from "../models/project.model";
 import crypto from "crypto";
@@ -7,6 +8,8 @@ import {
   createWorkspaceSchema,
   updateWorkspaceSchema,
   workspaceIdParamSchema,
+  inviteToWorkspaceSchema,
+  joinTokenParamSchema,
 } from "../validators/workspace.validator";
 import mongoose from "mongoose";
 
@@ -381,6 +384,243 @@ export const getWorkspaceMembers = async (req: Request, res: Response) => {
     return res.status(200).json({ success: true, data: members });
   } catch (error) {
     console.error("Get workspace members error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * Invite a user to a workspace.
+ *
+ * Owner sends an invite to an email address. If that email belongs to a registered
+ * user the invite is created and the join URL is returned. If the email is not
+ * registered the invite is still created — the frontend should direct the recipient
+ * to /register?invite=<token> and then to the join flow after sign-up.
+ *
+ * An existing pending invite for the same email+workspace is revoked and replaced.
+ *
+ * @route POST /api/workspace/:workspaceId/invite
+ * @access Private (owner only)
+ *
+ * Request Body:
+ * - email: string (required)
+ *
+ * Response:
+ * - 200: { message, inviteUrl }
+ * - 400: Validation error or already a member
+ * - 403: Not the workspace owner
+ * - 404: Workspace not found
+ * - 500: Internal server error
+ */
+export const inviteToWorkspace = async (req: Request, res: Response) => {
+  try {
+    const paramValidation = workspaceIdParamSchema.safeParse(req.params);
+    const bodyValidation = inviteToWorkspaceSchema.safeParse(req.body);
+
+    if (!paramValidation.success) {
+      return res.status(400).json({ message: paramValidation.error.issues[0].message });
+    }
+    if (!bodyValidation.success) {
+      return res.status(400).json({ message: bodyValidation.error.issues[0].message });
+    }
+
+    const { workspaceId } = paramValidation.data;
+    const { email } = bodyValidation.data;
+    const userId = (req as any).user._id;
+
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ message: "Workspace not found" });
+    }
+
+    if (workspace.owner.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Only the owner can send invites" });
+    }
+
+    // Check if the email belongs to an existing member
+    const existingUser = await User.findOne({ email: email.toLowerCase() }).select("_id");
+    if (existingUser) {
+      const isAlreadyMember = workspace.members
+        .map((id) => id.toString())
+        .includes(existingUser._id.toString());
+
+      if (isAlreadyMember) {
+        return res.status(400).json({ message: "This user is already a workspace member" });
+      }
+    }
+
+    // Revoke any existing pending invite for this email + workspace
+    await WorkspaceInvite.deleteOne({
+      workspace: workspaceId,
+      invitedEmail: email.toLowerCase(),
+      used: false,
+    });
+
+    // Generate token — raw goes in the URL, hashed is stored in DB
+    const rawToken = crypto.randomBytes(20).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await WorkspaceInvite.create({
+      workspace: workspaceId,
+      invitedEmail: email.toLowerCase(),
+      invitedBy: userId,
+      token: hashedToken,
+      expiresAt,
+    });
+
+    const inviteUrl = `${process.env.FRONTEND_URL}/workspace/join/${rawToken}`;
+
+    return res.status(200).json({
+      message: "Invite created successfully",
+      inviteUrl,
+      // Tells the frontend whether the recipient already has an account
+      recipientExists: !!existingUser,
+    });
+  } catch (error) {
+    console.error("Invite to workspace error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * Join a workspace via invite token.
+ *
+ * The logged-in user submits the raw token from the invite URL. The backend
+ * hashes it, looks up the invite, validates it, and adds the user to the workspace.
+ * The token is marked as used immediately after a successful join.
+ *
+ * The logged-in user's email must match the invitedEmail on the invite — invites
+ * are not transferable.
+ *
+ * @route POST /api/workspace/join/:token
+ * @access Private (requires authentication)
+ *
+ * URL Parameters:
+ * - token: string (raw invite token from the invite URL)
+ *
+ * Response:
+ * - 200: { message, workspace }
+ * - 400: Validation error, token expired/used, or email mismatch
+ * - 404: Invalid token
+ * - 500: Internal server error
+ */
+export const joinWorkspace = async (req: Request, res: Response) => {
+  try {
+    const validation = joinTokenParamSchema.safeParse(req.params);
+    if (!validation.success) {
+      return res.status(400).json({ message: validation.error.issues[0].message });
+    }
+
+    const { token: rawToken } = validation.data;
+    const userId = (req as any).user._id;
+
+    // Hash the raw token to look it up in the DB
+    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+    const invite = await WorkspaceInvite.findOne({ token: hashedToken });
+    if (!invite) {
+      return res.status(404).json({ message: "Invalid invite link" });
+    }
+
+    if (invite.used) {
+      return res.status(400).json({ message: "This invite link has already been used" });
+    }
+
+    if (invite.expiresAt < new Date()) {
+      return res.status(400).json({ message: "This invite link has expired" });
+    }
+
+    // Ensure the logged-in user's email matches the invite recipient
+    const user = await User.findById(userId).select("email");
+    if (!user || user.email.toLowerCase() !== invite.invitedEmail) {
+      return res.status(400).json({
+        message: "This invite was sent to a different email address",
+      });
+    }
+
+    const workspace = await Workspace.findById(invite.workspace);
+    if (!workspace) {
+      return res.status(404).json({ message: "Workspace no longer exists" });
+    }
+
+    const isAlreadyMember = workspace.members
+      .map((id) => id.toString())
+      .includes(userId.toString());
+
+    if (isAlreadyMember) {
+      // Mark as used and return success — idempotent
+      invite.used = true;
+      await invite.save();
+      return res.status(200).json({ message: "You are already a member of this workspace", workspace });
+    }
+
+    // Add user to workspace and update user's workspaces array
+    workspace.members.push(new mongoose.Types.ObjectId(userId));
+    await workspace.save();
+
+    await User.findByIdAndUpdate(userId, { $addToSet: { workspaces: workspace._id } });
+
+    // Invalidate the token — one-time use only
+    invite.used = true;
+    await invite.save();
+
+    return res.status(200).json({
+      message: "Successfully joined the workspace",
+      workspace,
+    });
+  } catch (error) {
+    console.error("Join workspace error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * Remove a member from a workspace.
+ * Only the workspace owner can remove members.
+ * Owner cannot remove themselves.
+ * Removes workspace from the removed user's workspaces array (bidirectional cleanup).
+ *
+ * @route DELETE /api/workspace/:workspaceId/members/:memberId
+ * @access Private (owner only)
+ */
+export const removeWorkspaceMember = async (req: Request, res: Response) => {
+  try {
+    const { workspaceId, memberId } = req.params;
+    const userId = (req as any).user._id;
+
+    if (
+      !mongoose.Types.ObjectId.isValid(workspaceId) ||
+      !mongoose.Types.ObjectId.isValid(memberId)
+    ) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ message: "Workspace not found" });
+    }
+
+    if (workspace.owner.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Only the owner can remove members" });
+    }
+
+    if (workspace.owner.toString() === memberId) {
+      return res.status(400).json({ message: "Cannot remove the workspace owner" });
+    }
+
+    const isMember = workspace.members.map((id) => id.toString()).includes(memberId);
+    if (!isMember) {
+      return res.status(404).json({ message: "User is not a member of this workspace" });
+    }
+
+    workspace.members = workspace.members.filter((id) => id.toString() !== memberId);
+    await workspace.save();
+
+    await User.findByIdAndUpdate(memberId, { $pull: { workspaces: workspace._id } });
+
+    return res.status(200).json({ message: "Member removed successfully" });
+  } catch (error) {
+    console.error("Remove workspace member error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -36,3 +36,18 @@ export const updateWorkspaceSchema = z.object({
 export const workspaceIdParamSchema = z.object({
   workspaceId: z.string().min(1, "Workspace ID is required"),
 });
+
+/**
+ * Schema for sending a workspace invite
+ * - email: the recipient's email address
+ */
+export const inviteToWorkspaceSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+/**
+ * Schema for the join token URL parameter
+ */
+export const joinTokenParamSchema = z.object({
+  token: z.string().min(1, "Invite token is required"),
+});

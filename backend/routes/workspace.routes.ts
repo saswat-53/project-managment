@@ -6,6 +6,9 @@ import {
   getWorkspaceMembers,
   updateWorkspace,
   deleteWorkspace,
+  removeWorkspaceMember,
+  inviteToWorkspace,
+  joinWorkspace,
 } from "../controllers/workspace.controller";
 
 import { verifyJWT } from "../middlewares/auth";
@@ -138,6 +141,7 @@ router.get("/workspaces", verifyJWT, getMyWorkspaces);
  *         description: Workspace not found
  */
 router.get("/:workspaceId/members", verifyJWT, getWorkspaceMembers);
+router.delete("/:workspaceId/members/:memberId", verifyJWT, removeWorkspaceMember);
 router.get("/:workspaceId", verifyJWT, getWorkspaceById);
 
 /**
@@ -244,5 +248,11 @@ router.put("/:workspaceId", verifyJWT, updateWorkspace);
  *         description: Workspace not found
  */
 router.delete("/:workspaceId", verifyJWT, deleteWorkspace);
+
+// Invite routes
+// POST /:workspaceId/invite  — owner sends an invite to an email
+// POST /join/:token          — logged-in user joins via the invite link
+router.post("/:workspaceId/invite", verifyJWT, inviteToWorkspace);
+router.post("/join/:token", verifyJWT, joinWorkspace);
 
 export default router;
