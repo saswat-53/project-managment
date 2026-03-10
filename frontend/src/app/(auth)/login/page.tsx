@@ -32,7 +32,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-dark-bg font-mono">
+    <div className="flex min-h-screen bg-white font-mono dark:bg-dark-bg">
       {/* ── Left Panel — geometric art ─────────────────────── */}
       <div
         className="relative hidden w-[46%] overflow-hidden lg:flex"
@@ -89,7 +89,7 @@ export default function LoginPage() {
               <div className="flex h-8 w-8 items-center justify-center border-2 border-amber-400">
                 <div className="h-3 w-3 bg-amber-400" />
               </div>
-              <span className="text-lg font-bold tracking-widest text-white uppercase">
+              <span className="text-lg font-bold uppercase tracking-widest text-gray-900 dark:text-white">
                 ProjectFlow
               </span>
             </div>
@@ -97,9 +97,9 @@ export default function LoginPage() {
 
           {/* Heading */}
           <div className="mb-10">
-            <h1 className="text-3xl font-light text-white">
+            <h1 className="text-3xl font-light text-gray-900 dark:text-white">
               Welcome<br />
-              <span className="text-zinc-500">back.</span>
+              <span className="text-gray-500 dark:text-zinc-500">back.</span>
             </h1>
             <div className="mt-4 h-px w-8 bg-amber-400" />
           </div>
@@ -107,7 +107,7 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+              <label className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500">
                 Email
               </label>
               <input
@@ -116,13 +116,13 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="you@company.com"
-                className="w-full border border-stroke-dark bg-dark-secondary px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-all duration-200 focus:border-amber-400 focus:ring-0"
+                className="w-full border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:border-amber-400 focus:ring-0 dark:border-stroke-dark dark:bg-dark-secondary dark:text-white dark:placeholder-zinc-500"
               />
             </div>
 
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <label className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+                <label className="text-[10px] uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500">
                   Password
                 </label>
               </div>
@@ -133,7 +133,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full border border-stroke-dark bg-dark-secondary px-4 py-3 pr-11 text-sm text-white placeholder-zinc-500 outline-none transition-all duration-200 focus:border-amber-400 focus:ring-0"
+                  className="w-full border border-gray-200 bg-gray-50 px-4 py-3 pr-11 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:border-amber-400 focus:ring-0 dark:border-stroke-dark dark:bg-dark-secondary dark:text-white dark:placeholder-zinc-500"
                 />
                 <button
                   type="button"
@@ -176,7 +176,7 @@ export default function LoginPage() {
           </form>
 
           {/* Footer */}
-          <div className="mt-8 border-t border-stroke-dark pt-8">
+          <div className="mt-8 border-t border-gray-200 pt-8 dark:border-stroke-dark">
             <p className="text-xs text-zinc-600">
               No account?{" "}
               <Link

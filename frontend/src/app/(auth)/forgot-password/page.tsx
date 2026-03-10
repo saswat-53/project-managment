@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-dark-bg px-6 font-mono">
+    <div className="flex min-h-screen items-center justify-center bg-white px-6 font-mono dark:bg-dark-bg">
       {/* Background grid */}
       <div
         className="pointer-events-none fixed inset-0 opacity-[0.04]"
@@ -39,22 +39,22 @@ export default function ForgotPasswordPage() {
         <div className="absolute -left-4 -top-4 h-8 w-8 border-l-2 border-t-2 border-amber-400/50" />
         <div className="absolute -bottom-4 -right-4 h-8 w-8 border-b-2 border-r-2 border-amber-400/50" />
 
-        <div className="border border-stroke-dark bg-dark-secondary/80 p-10 backdrop-blur-sm">
+        <div className="border border-gray-200 bg-gray-50/80 p-10 backdrop-blur-sm dark:border-stroke-dark dark:bg-dark-secondary/80">
           {/* Logo */}
           <div className="mb-10 flex items-center gap-3">
             <div className="flex h-7 w-7 items-center justify-center border-2 border-amber-400">
               <div className="h-2.5 w-2.5 bg-amber-400" />
             </div>
-            <span className="text-sm font-bold uppercase tracking-widest text-white">
+            <span className="text-sm font-bold uppercase tracking-widest text-gray-900 dark:text-white">
               ProjectFlow
             </span>
           </div>
 
           {/* Heading */}
           <div className="mb-8">
-            <h1 className="text-2xl font-light text-white">Reset password</h1>
+            <h1 className="text-2xl font-light text-gray-900 dark:text-white">Reset password</h1>
             <div className="mt-3 h-px w-8 bg-amber-400" />
-            <p className="mt-3 text-xs text-zinc-500">
+            <p className="mt-3 text-xs text-gray-500 dark:text-zinc-500">
               Enter your email and we'll send a reset link.
             </p>
           </div>
@@ -64,14 +64,14 @@ export default function ForgotPasswordPage() {
               <p className="text-sm text-emerald-400">
                 If an account exists for <span className="font-semibold">{email}</span>, a password reset link has been sent.
               </p>
-              <p className="mt-2 text-xs text-zinc-500">
+              <p className="mt-2 text-xs text-gray-500 dark:text-zinc-500">
                 Check your inbox (and spam folder).
               </p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+                <label className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500">
                   Email
                 </label>
                 <input
@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="you@company.com"
-                  className="w-full border border-stroke-dark bg-dark-bg px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none transition-all focus:border-amber-400"
+                  className="w-full border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-amber-400 dark:border-stroke-dark dark:bg-dark-bg dark:text-white dark:placeholder-zinc-600"
                 />
               </div>
 
@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
             </form>
           )}
 
-          <div className="mt-8 border-t border-dark-bg pt-8">
+          <div className="mt-8 border-t border-gray-100 pt-8 dark:border-dark-bg">
             <p className="text-xs text-zinc-600">
               Remembered it?{" "}
               <Link href="/login" className="text-amber-400 transition-colors hover:text-amber-300">
