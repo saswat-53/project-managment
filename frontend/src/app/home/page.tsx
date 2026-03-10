@@ -6,6 +6,8 @@ import { useAppSelector } from "../redux";
 import { DataGrid } from "@mui/x-data-grid";
 import Header from "@/components/Header";
 import { dataGridClassNames, dataGridSxStyles } from "@/lib/utils";
+import ModalNewProject from "@/app/projects/ModalNewProject";
+import { PlusSquare } from "lucide-react";
 
 const ProjectTaskLoader = ({
   projectId,
@@ -35,6 +37,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const HomePage = () => {
   const [tasksByProject, setTasksByProject] = useState<Record<string, Task[]>>({});
+  const [isModalNewProjectOpen, setIsModalNewProjectOpen] = useState(false);
 
   const activeWorkspaceId = useAppSelector((state) => state.global.activeWorkspaceId);
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
@@ -104,27 +107,59 @@ const HomePage = () => {
 
         {/* Projects Table */}
         <div className="rounded-lg bg-white p-4 shadow dark:bg-dark-secondary md:col-span-2">
-          <h3 className="mb-4 text-lg font-semibold dark:text-white">
-            Projects ({projects.length})
-          </h3>
-          <div style={{ height: 400, width: "100%" }}>
-            <DataGrid
-              rows={projects}
-              columns={[
-                { field: "name", headerName: "Name", width: 200 },
-                { field: "status", headerName: "Status", width: 150 },
-                { field: "description", headerName: "Description", width: 300 },
-              ]}
-              getRowId={(row) => row._id}
-              loading={isProjectsLoading}
-              getRowClassName={() => "data-grid-row"}
-              getCellClassName={() => "data-grid-cell"}
-              className={dataGridClassNames}
-              sx={dataGridSxStyles(isDarkMode)}
-            />
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold dark:text-white">
+              Projects ({projects.length})
+            </h3>
+            {projects.length > 0 && (
+              <button
+                onClick={() => setIsModalNewProjectOpen(true)}
+                className="flex items-center gap-1.5 rounded bg-amber-400 px-3 py-1.5 text-sm font-medium text-zinc-950 hover:bg-amber-300"
+              >
+                <PlusSquare className="h-4 w-4" />
+                New Project
+              </button>
+            )}
           </div>
+
+          {projects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-gray-200 py-16 dark:border-stroke-dark">
+              <p className="text-gray-400 dark:text-gray-500">
+                No projects yet. Create your first project to get started.
+              </p>
+              <button
+                onClick={() => setIsModalNewProjectOpen(true)}
+                className="flex items-center gap-2 rounded bg-amber-400 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-amber-300"
+              >
+                <PlusSquare className="h-4 w-4" />
+                Create First Project
+              </button>
+            </div>
+          ) : (
+            <div style={{ height: 400, width: "100%" }}>
+              <DataGrid
+                rows={projects}
+                columns={[
+                  { field: "name", headerName: "Name", width: 200 },
+                  { field: "status", headerName: "Status", width: 150 },
+                  { field: "description", headerName: "Description", width: 300 },
+                ]}
+                getRowId={(row) => row._id}
+                loading={isProjectsLoading}
+                getRowClassName={() => "data-grid-row"}
+                getCellClassName={() => "data-grid-cell"}
+                className={dataGridClassNames}
+                sx={dataGridSxStyles(isDarkMode)}
+              />
+            </div>
+          )}
         </div>
       </div>
+
+      <ModalNewProject
+        isOpen={isModalNewProjectOpen}
+        onClose={() => setIsModalNewProjectOpen(false)}
+      />
     </div>
   );
 };
