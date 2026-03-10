@@ -12,9 +12,11 @@ import React, { useState } from "react";
 type Props = {
   id: string;
   setIsModalNewTaskOpen: (isOpen: boolean) => void;
+  canManage?: boolean;
+  currentUserId?: string;
 };
 
-const TableView = ({ id, setIsModalNewTaskOpen }: Props) => {
+const TableView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Props) => {
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
   const { data: tasks } = useGetTasksQuery({ projectId: id });
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -56,6 +58,10 @@ const TableView = ({ id, setIsModalNewTaskOpen }: Props) => {
         const isDone = params.row.status === "done";
         const taskId = params.row._id as string;
         const isConfirming = confirmDeleteId === taskId;
+        const isCreator = params.row.createdBy?._id === currentUserId;
+        const isAssignee = params.row.assignedTo?._id === currentUserId;
+        const canEditThisTask = canManage || isCreator || isAssignee;
+        if (!canEditThisTask) return null;
         return (
           <div className="flex h-full justify-center items-center gap-2">
             <button

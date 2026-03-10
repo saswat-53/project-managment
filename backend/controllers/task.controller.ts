@@ -8,6 +8,7 @@ import {
   taskIdParamSchema,
   projectIdParamSchema,
 } from "../validators/task.validator";
+import { getUserWorkspaceRole } from "../utils/workspaceRole";
 
 /**
  * Recomputes and persists the project status based on its current tasks.
@@ -277,7 +278,7 @@ export const updateTask = async (req: Request, res: Response) => {
 
     const project: any = task.project;
 
-    // Check if user is a project member
+    // Check if user is a project member (needed for edit access)
     const isProjectMember = project.members
       .map((id: any) => id.toString())
       .includes(userId.toString());
@@ -285,6 +286,18 @@ export const updateTask = async (req: Request, res: Response) => {
     if (!isProjectMember) {
       return res.status(403).json({
         message: "Not authorized. You must be a project member to update tasks.",
+      });
+    }
+
+    // Admins and managers can edit any task; members can only edit their own or assigned tasks
+    const workspaceRole = await getUserWorkspaceRole(userId.toString(), task.workspace.toString());
+    const isAdminOrManager = workspaceRole === "admin" || workspaceRole === "manager";
+    const isCreator = task.createdBy?.toString() === userId.toString();
+    const isAssignee = task.assignedTo?.toString() === userId.toString();
+
+    if (!isAdminOrManager && !isCreator && !isAssignee) {
+      return res.status(403).json({
+        message: "Members can only edit tasks they created or are assigned to.",
       });
     }
 
@@ -362,6 +375,18 @@ export const deleteTask = async (req: Request, res: Response) => {
     if (!isProjectMember) {
       return res.status(403).json({
         message: "Not authorized. You must be a project member to delete tasks.",
+      });
+    }
+
+    // Admins and managers can delete any task; members can only delete their own or assigned tasks
+    const workspaceRole = await getUserWorkspaceRole(userId.toString(), task.workspace.toString());
+    const isAdminOrManager = workspaceRole === "admin" || workspaceRole === "manager";
+    const isCreator = task.createdBy?.toString() === userId.toString();
+    const isAssignee = task.assignedTo?.toString() === userId.toString();
+
+    if (!isAdminOrManager && !isCreator && !isAssignee) {
+      return res.status(403).json({
+        message: "Members can only delete tasks they created or are assigned to.",
       });
     }
 

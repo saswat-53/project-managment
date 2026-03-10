@@ -5,6 +5,8 @@ import {
   useGetWorkspacesQuery,
   useGetCurrentUserQuery,
   useRemoveWorkspaceMemberMutation,
+  useUpdateMemberRoleMutation,
+  WorkspaceRole,
 } from "@/state/api";
 import React, { useState } from "react";
 import { useAppSelector } from "@/app/redux";
@@ -43,6 +45,7 @@ const Members = () => {
     skip: !activeWorkspaceId,
   });
   const [removeWorkspaceMember] = useRemoveWorkspaceMemberMutation();
+  const [updateMemberRole] = useUpdateMemberRoleMutation();
 
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState("");
@@ -53,7 +56,11 @@ const Members = () => {
     (typeof activeWorkspace.owner === "string"
       ? activeWorkspace.owner
       : activeWorkspace.owner._id);
-  const isOwner = !!currentUser && !!ownerId && currentUser._id === ownerId;
+
+  // Get current user's workspace role from the members list
+  const myWorkspaceRole = members?.find((m) => m._id === currentUser?._id)?.workspaceRole;
+  const isAdmin = myWorkspaceRole === "admin";
+  const canManage = isAdmin || myWorkspaceRole === "manager";
 
   const handleRemove = async (memberId: string) => {
     if (!activeWorkspaceId) return;
@@ -65,6 +72,16 @@ const Members = () => {
       setRemoveError(err?.data?.message || "Failed to remove member.");
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const handleRoleChange = async (memberId: string, newRole: WorkspaceRole) => {
+    if (!activeWorkspaceId) return;
+    setRemoveError("");
+    try {
+      await updateMemberRole({ workspaceId: activeWorkspaceId, userId: memberId, role: newRole }).unwrap();
+    } catch (err: any) {
+      setRemoveError(err?.data?.message || "Failed to update role.");
     }
   };
 
@@ -97,8 +114,35 @@ const Members = () => {
     },
     { field: "name", headerName: "Name", width: 180 },
     { field: "email", headerName: "Email", width: 260 },
-    { field: "role", headerName: "Role", width: 130 },
-    ...(isOwner
+    {
+      field: "workspaceRole",
+      headerName: "Workspace Role",
+      width: 170,
+      renderCell: (params: any) => {
+        const isCurrentUser = params.row._id === currentUser?._id;
+        // Admins can change roles for others
+        if (isAdmin && !isCurrentUser) {
+          return (
+            <div className="flex h-full items-center">
+              <select
+                value={params.value ?? "member"}
+                onChange={(e) => handleRoleChange(params.row._id, e.target.value as WorkspaceRole)}
+                onClick={(e) => e.stopPropagation()}
+                className="rounded border border-gray-300 bg-white px-2 py-1 text-xs capitalize dark:border-dark-tertiary dark:bg-dark-secondary dark:text-white"
+              >
+                <option value="admin">admin</option>
+                <option value="manager">manager</option>
+                <option value="member">member</option>
+              </select>
+            </div>
+          );
+        }
+        return (
+          <span className="text-sm capitalize">{params.value ?? "member"}</span>
+        );
+      },
+    },
+    ...(canManage
       ? [
           {
             field: "actions",
@@ -107,7 +151,15 @@ const Members = () => {
             sortable: false,
             renderCell: (params: any) => {
               const isThisOwner = params.row._id === ownerId;
-              if (isThisOwner) return null;
+              const isCurrentUser = params.row._id === currentUser?._id;
+              const targetRole = params.row.workspaceRole as WorkspaceRole;
+
+              // Can't remove the workspace owner or yourself
+              if (isThisOwner || isCurrentUser) return null;
+
+              // Managers cannot remove admins
+              if (myWorkspaceRole === "manager" && targetRole === "admin") return null;
+
               const isRemoving = removingId === params.row._id;
               return (
                 <div className="flex h-full items-center">

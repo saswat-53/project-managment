@@ -9,6 +9,8 @@ import ModalEditTask from "@/components/ModalEditTask";
 
 type Props = {
   task: Task;
+  canManage?: boolean;
+  currentUserId?: string;
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; darkBg: string }> = {
@@ -23,13 +25,17 @@ const STATUS_BORDER: Record<string, string> = {
   "done":        "border-l-green-500",
 };
 
-const TaskCard = ({ task }: Props) => {
+const TaskCard = ({ task, canManage, currentUserId }: Props) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
   const [deleteTask, { isLoading: isDeleting }] = useDeleteTaskMutation();
   const status = STATUS_CONFIG[task.status] ?? STATUS_CONFIG["todo"];
   const borderColor = STATUS_BORDER[task.status] ?? STATUS_BORDER["todo"];
   const isDone = task.status === "done";
+
+  const isCreator = task.createdBy?._id === currentUserId;
+  const isAssignee = task.assignedTo?._id === currentUserId;
+  const canEditThisTask = canManage || isCreator || isAssignee;
 
   const handleDelete = async () => {
     await deleteTask(task._id);
@@ -74,20 +80,24 @@ const TaskCard = ({ task }: Props) => {
               </div>
             ) : (
               <div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                <button
-                  className={isDone ? "cursor-not-allowed text-gray-300 dark:text-neutral-700" : "text-gray-400 hover:text-amber-500 dark:text-neutral-500 dark:hover:text-amber-400"}
-                  onClick={() => !isDone && setIsEditOpen(true)}
-                  title={isDone ? "Cannot edit a completed task" : "Edit task"}
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  className="text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
-                  onClick={() => setIsDeleteConfirming(true)}
-                  title="Delete task"
-                >
-                  <Trash2 size={14} />
-                </button>
+                {canEditThisTask && (
+                  <button
+                    className={isDone ? "cursor-not-allowed text-gray-300 dark:text-neutral-700" : "text-gray-400 hover:text-amber-500 dark:text-neutral-500 dark:hover:text-amber-400"}
+                    onClick={() => !isDone && setIsEditOpen(true)}
+                    title={isDone ? "Cannot edit a completed task" : "Edit task"}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                )}
+                {canEditThisTask && (
+                  <button
+                    className="text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
+                    onClick={() => setIsDeleteConfirming(true)}
+                    title="Delete task"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
             )}
           </div>

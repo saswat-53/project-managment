@@ -9,7 +9,8 @@ import Table from "../TableView";
 import ModalNewTask from "@/components/ModalNewTask";
 import ModalAddMember from "@/components/ModalAddMember";
 import DashboardWrapper from "@/app/dashboardWrapper";
-import { useGetTasksQuery } from "@/state/api";
+import { useGetTasksQuery, useGetCurrentUserQuery, useGetWorkspaceMembersQuery } from "@/state/api";
+import { useAppSelector } from "@/app/redux";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -20,6 +21,16 @@ const Project = ({ params }: Props) => {
   const [activeTab, setActiveTab] = useState("Board");
   const [isModalNewTaskOpen, setIsModalNewTaskOpen] = useState(false);
   const [isModalAddMemberOpen, setIsModalAddMemberOpen] = useState(false);
+
+  const activeWorkspaceId = useAppSelector((state) => state.global.activeWorkspaceId);
+  const { data: currentUser } = useGetCurrentUserQuery();
+  const { data: workspaceMembers } = useGetWorkspaceMembersQuery(
+    activeWorkspaceId ?? "",
+    { skip: !activeWorkspaceId }
+  );
+
+  const myWorkspaceRole = workspaceMembers?.find(m => m._id === currentUser?._id)?.workspaceRole;
+  const canManage = myWorkspaceRole === "admin" || myWorkspaceRole === "manager";
 
   const { isLoading, error } = useGetTasksQuery({ projectId: id });
 
@@ -45,12 +56,14 @@ const Project = ({ params }: Props) => {
         isOpen={isModalAddMemberOpen}
         onClose={() => setIsModalAddMemberOpen(false)}
         projectId={id}
+        canManage={canManage}
       />
       <ProjectHeader
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onAddMember={() => setIsModalAddMemberOpen(true)}
+        onAddMember={canManage ? () => setIsModalAddMemberOpen(true) : undefined}
         projectId={id}
+        canManage={canManage}
       />
 
       {isLoading && (
@@ -73,16 +86,31 @@ const Project = ({ params }: Props) => {
       {!isLoading && !taskError && (
         <>
           {activeTab === "Board" && (
-            <Board id={id} setIsModalNewTaskOpen={setIsModalNewTaskOpen} />
+            <Board
+              id={id}
+              setIsModalNewTaskOpen={setIsModalNewTaskOpen}
+              canManage={canManage}
+              currentUserId={currentUser?._id}
+            />
           )}
           {activeTab === "List" && (
-            <List id={id} setIsModalNewTaskOpen={setIsModalNewTaskOpen} />
+            <List
+              id={id}
+              setIsModalNewTaskOpen={setIsModalNewTaskOpen}
+              canManage={canManage}
+              currentUserId={currentUser?._id}
+            />
           )}
           {activeTab === "Timeline" && (
             <Timeline id={id} setIsModalNewTaskOpen={setIsModalNewTaskOpen} />
           )}
           {activeTab === "Table" && (
-            <Table id={id} setIsModalNewTaskOpen={setIsModalNewTaskOpen} />
+            <Table
+              id={id}
+              setIsModalNewTaskOpen={setIsModalNewTaskOpen}
+              canManage={canManage}
+              currentUserId={currentUser?._id}
+            />
           )}
         </>
       )}

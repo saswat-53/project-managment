@@ -15,9 +15,10 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   projectId: string;
+  canManage?: boolean;
 };
 
-const ModalAddMember = ({ isOpen, onClose, projectId }: Props) => {
+const ModalAddMember = ({ isOpen, onClose, projectId, canManage }: Props) => {
   const activeWorkspaceId = useAppSelector(
     (state) => state.global.activeWorkspaceId,
   );
@@ -127,14 +128,16 @@ const ModalAddMember = ({ isOpen, onClose, projectId }: Props) => {
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleRemove(id)}
-                      disabled={isRemoving}
-                      title="Remove from project"
-                      className="rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {canManage && (
+                      <button
+                        onClick={() => handleRemove(id)}
+                        disabled={isRemoving}
+                        title="Remove from project"
+                        className="rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -142,8 +145,8 @@ const ModalAddMember = ({ isOpen, onClose, projectId }: Props) => {
           </div>
         )}
 
-        {/* Add New Members */}
-        <form onSubmit={handleAdd} className="space-y-3">
+        {/* Add New Members — only visible to admins and managers */}
+        {canManage && <form onSubmit={handleAdd} className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
             Add Members
           </p>
@@ -199,7 +202,7 @@ const ModalAddMember = ({ isOpen, onClose, projectId }: Props) => {
                   : "Select members above"}
             </button>
           )}
-        </form>
+        </form>}
       </div>
     </Modal>
   );

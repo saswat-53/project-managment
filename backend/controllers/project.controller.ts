@@ -8,6 +8,7 @@ import {
   projectIdParamSchema,
   workspaceIdParamSchema,
 } from "../validators/project.validator";
+import { getUserWorkspaceRole } from "../utils/workspaceRole";
 
 /**
  * Create Project
@@ -66,14 +67,11 @@ export const createProject = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Workspace not found" });
     }
 
-    // Check if user is a member of the workspace
-    const isMember = workspace.members
-      .map((id) => id.toString())
-      .includes(userId.toString());
-
-    if (!isMember) {
+    // Only admins and managers can create projects
+    const workspaceRole = await getUserWorkspaceRole(userId.toString(), workspaceId);
+    if (workspaceRole !== "admin" && workspaceRole !== "manager") {
       return res.status(403).json({
-        message: "Not allowed to create project in this workspace",
+        message: "Only admins and managers can create projects",
       });
     }
 
@@ -311,7 +309,7 @@ export const updateProject = async (req: Request, res: Response) => {
 
     const workspace: any = project.workspace;
 
-    // Check if user is a workspace member
+    // Check if user is a workspace member (read access)
     const isMember = workspace.members
       .map((id: any) => id.toString())
       .includes(userId.toString());
@@ -329,6 +327,14 @@ export const updateProject = async (req: Request, res: Response) => {
     if (status !== undefined) project.status = status;
 
     if (Array.isArray(members)) {
+      // Only admins and managers can change project members
+      const workspaceRole = await getUserWorkspaceRole(userId.toString(), workspace._id.toString());
+      if (workspaceRole !== "admin" && workspaceRole !== "manager") {
+        return res.status(403).json({
+          message: "Only admins and managers can manage project members",
+        });
+      }
+
       // Check if any provided member is not in the workspace
       const invalidMembers = members.filter(
         (memberId: string) => !workspaceMemberIds.includes(memberId)
@@ -392,12 +398,11 @@ export const removeProjectMember = async (req: Request, res: Response) => {
     }
 
     const workspace: any = project.workspace;
-    const isWorkspaceMember = workspace.members
-      .map((id: any) => id.toString())
-      .includes(userId.toString());
 
-    if (!isWorkspaceMember) {
-      return res.status(403).json({ message: "Not authorized" });
+    // Only admins and managers can remove project members
+    const workspaceRole = await getUserWorkspaceRole(userId.toString(), workspace._id.toString());
+    if (workspaceRole !== "admin" && workspaceRole !== "manager") {
+      return res.status(403).json({ message: "Only admins and managers can remove project members" });
     }
 
     const isProjectMember = project.members
@@ -449,13 +454,10 @@ export const deleteProject = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Workspace not found" });
     }
 
-    // Check if user is a workspace member
-    const isMember = workspace.members
-      .map((id: any) => id.toString())
-      .includes(userId.toString());
-
-    if (!isMember) {
-      return res.status(403).json({ message: "Not authorized" });
+    // Only admins and managers can delete projects
+    const workspaceRole = await getUserWorkspaceRole(userId.toString(), workspace._id.toString());
+    if (workspaceRole !== "admin" && workspaceRole !== "manager") {
+      return res.status(403).json({ message: "Only admins and managers can delete projects" });
     }
 
     // Cascade delete and workspace cleanup handled by Project pre-delete hook

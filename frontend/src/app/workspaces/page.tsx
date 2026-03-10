@@ -5,7 +5,6 @@ import { Trash2, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   useGetWorkspacesQuery,
-  useGetCurrentUserQuery,
   useCreateWorkspaceMutation,
   useDeleteWorkspaceMutation,
   useLogoutMutation,
@@ -21,7 +20,6 @@ export default function WorkspacesPage() {
   const activeWorkspaceId = useAppSelector((state) => state.global.activeWorkspaceId);
 
   const { data: workspaces, isLoading, isError } = useGetWorkspacesQuery();
-  const { data: currentUser } = useGetCurrentUserQuery();
   const [createWorkspace, { isLoading: isCreating }] =
     useCreateWorkspaceMutation();
   const [deleteWorkspace] = useDeleteWorkspaceMutation();
@@ -166,7 +164,6 @@ export default function WorkspacesPage() {
                 workspace={ws}
                 index={i}
                 onSelect={handleSelect}
-                currentUserId={currentUser?._id}
                 onDelete={handleDeleteWorkspace}
                 onInvite={(id) => setInvitingWorkspaceId(id)}
               />
@@ -261,22 +258,21 @@ function WorkspaceCard({
   workspace,
   index,
   onSelect,
-  currentUserId,
   onDelete,
   onInvite,
 }: {
   workspace: Workspace;
   index: number;
   onSelect: (ws: Workspace) => void;
-  currentUserId?: string;
   onDelete: (workspaceId: string) => Promise<void>;
   onInvite: (workspaceId: string) => void;
 }) {
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const ownerId = typeof workspace.owner === "string" ? workspace.owner : workspace.owner._id;
-  const isOwner = !!currentUserId && currentUserId === ownerId;
+  const myRole = workspace.myRole;
+  const isAdmin = myRole === "admin";
+  const canInvite = myRole === "admin" || myRole === "manager";
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -331,8 +327,8 @@ function WorkspaceCard({
         className="flex items-center justify-between border-t border-gray-200 pt-4 transition-colors group-hover:border-gray-200 dark:border-stroke-dark dark:group-hover:border-stroke-dark"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Left — delete (owners) or member count (non-owners) */}
-        {isOwner ? (
+        {/* Left — delete (admins) / invite (admins + managers) or member count */}
+        {isAdmin || canInvite ? (
           isDeleteConfirming ? (
             <div className="flex items-center gap-3">
               <button
@@ -352,20 +348,24 @@ function WorkspaceCard({
             </div>
           ) : (
             <div className="flex items-center gap-3 opacity-0 transition-all group-hover:opacity-100">
-              <button
-                onClick={(e) => { e.stopPropagation(); onInvite(workspace._id); }}
-                className="text-zinc-600 hover:text-amber-400"
-                title="Invite member"
-              >
-                <UserPlus size={14} />
-              </button>
-              <button
-                onClick={() => setIsDeleteConfirming(true)}
-                className="text-zinc-600 hover:text-red-400"
-                title="Delete workspace"
-              >
-                <Trash2 size={14} />
-              </button>
+              {canInvite && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onInvite(workspace._id); }}
+                  className="text-zinc-600 hover:text-amber-400"
+                  title="Invite member"
+                >
+                  <UserPlus size={14} />
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => setIsDeleteConfirming(true)}
+                  className="text-zinc-600 hover:text-red-400"
+                  title="Delete workspace"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
             </div>
           )
         ) : (

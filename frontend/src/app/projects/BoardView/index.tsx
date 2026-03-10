@@ -11,6 +11,8 @@ import ModalEditTask from "@/components/ModalEditTask";
 type BoardProps = {
   id: string;
   setIsModalNewTaskOpen: (isOpen: boolean) => void;
+  canManage?: boolean;
+  currentUserId?: string;
 };
 
 const taskStatus = [
@@ -19,7 +21,7 @@ const taskStatus = [
   { key: "done", label: "Done" },
 ];
 
-const BoardView = ({ id, setIsModalNewTaskOpen }: BoardProps) => {
+const BoardView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: BoardProps) => {
   const { data: tasks } = useGetTasksQuery({ projectId: id });
   const [updateTaskStatus] = useUpdateTaskStatusMutation();
 
@@ -38,6 +40,8 @@ const BoardView = ({ id, setIsModalNewTaskOpen }: BoardProps) => {
             tasks={tasks || []}
             moveTask={moveTask}
             setIsModalNewTaskOpen={setIsModalNewTaskOpen}
+            canManage={canManage}
+            currentUserId={currentUserId}
           />
         ))}
       </div>
@@ -51,6 +55,8 @@ type TaskColumnProps = {
   tasks: TaskType[];
   moveTask: (taskId: string, toStatus: string) => void;
   setIsModalNewTaskOpen: (isOpen: boolean) => void;
+  canManage?: boolean;
+  currentUserId?: string;
 };
 
 const TaskColumn = ({
@@ -59,6 +65,8 @@ const TaskColumn = ({
   tasks,
   moveTask,
   setIsModalNewTaskOpen,
+  canManage,
+  currentUserId,
 }: TaskColumnProps) => {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "task",
@@ -112,7 +120,7 @@ const TaskColumn = ({
       {tasks
         .filter((task) => task.status === statusKey)
         .map((task) => (
-          <Task key={task._id} task={task} />
+          <Task key={task._id} task={task} canManage={canManage} currentUserId={currentUserId} />
         ))}
     </div>
   );
@@ -120,9 +128,11 @@ const TaskColumn = ({
 
 type TaskProps = {
   task: TaskType;
+  canManage?: boolean;
+  currentUserId?: string;
 };
 
-const Task = ({ task }: TaskProps) => {
+const Task = ({ task, canManage, currentUserId }: TaskProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
   const [deleteTask, { isLoading: isDeleting }] = useDeleteTaskMutation();
@@ -137,6 +147,10 @@ const Task = ({ task }: TaskProps) => {
   const formattedDueDate = task.dueDate
     ? format(new Date(task.dueDate), "P")
     : "";
+
+  const isCreator = task.createdBy?._id === currentUserId || task.createdBy?._id?.toString() === currentUserId;
+  const isAssignee = task.assignedTo?._id === currentUserId || task.assignedTo?._id?.toString() === currentUserId;
+  const canEditThisTask = canManage || isCreator || isAssignee;
 
   return (
     <>
@@ -217,20 +231,24 @@ const Task = ({ task }: TaskProps) => {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <button
-                  className={`flex items-center ${task.status === "done" ? "cursor-not-allowed text-gray-300 dark:text-neutral-700" : "text-gray-500 hover:text-blue-500 dark:text-neutral-500 dark:hover:text-blue-400"}`}
-                  onClick={() => task.status !== "done" && setIsEditOpen(true)}
-                  title={task.status === "done" ? "Cannot edit a completed task" : "Edit task"}
-                >
-                  <MessageSquareMore size={20} />
-                </button>
-                <button
-                  className="text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
-                  onClick={() => setIsDeleteConfirming(true)}
-                  title="Delete task"
-                >
-                  <Trash2 size={16} />
-                </button>
+                {canEditThisTask && (
+                  <button
+                    className={`flex items-center ${task.status === "done" ? "cursor-not-allowed text-gray-300 dark:text-neutral-700" : "text-gray-500 hover:text-blue-500 dark:text-neutral-500 dark:hover:text-blue-400"}`}
+                    onClick={() => task.status !== "done" && setIsEditOpen(true)}
+                    title={task.status === "done" ? "Cannot edit a completed task" : "Edit task"}
+                  >
+                    <MessageSquareMore size={20} />
+                  </button>
+                )}
+                {canEditThisTask && (
+                  <button
+                    className="text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
+                    onClick={() => setIsDeleteConfirming(true)}
+                    title="Delete task"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             )}
           </div>

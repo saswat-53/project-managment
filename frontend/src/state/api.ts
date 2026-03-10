@@ -2,6 +2,8 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // ─── TypeScript Interfaces ────────────────────────────────────────────────────
 
+export type WorkspaceRole = "admin" | "manager" | "member";
+
 export interface User {
   _id: string;
   name: string;
@@ -12,6 +14,11 @@ export interface User {
   isEmailVerified?: boolean;
 }
 
+/** User with their per-workspace role — returned by getWorkspaceMembers */
+export interface WorkspaceMember extends User {
+  workspaceRole: WorkspaceRole;
+}
+
 export interface Workspace {
   _id: string;
   name: string;
@@ -19,6 +26,8 @@ export interface Workspace {
   owner: string | { _id: string; name: string; email: string };
   members: string[];
   inviteCode: string;
+  /** Current user's role in this workspace — included in getWorkspaces response */
+  myRole?: WorkspaceRole;
 }
 
 export interface Project {
@@ -98,10 +107,21 @@ export const api = createApi({
       }),
       invalidatesTags: ["Workspaces"],
     }),
-    getWorkspaceMembers: build.query<User[], string>({
+    getWorkspaceMembers: build.query<WorkspaceMember[], string>({
       query: (workspaceId) => `workspace/${workspaceId}/members`,
-      transformResponse: (res: { success: boolean; data: User[] }) => res.data,
+      transformResponse: (res: { success: boolean; data: WorkspaceMember[] }) => res.data,
       providesTags: ["Users"],
+    }),
+    updateMemberRole: build.mutation<
+      { message: string },
+      { workspaceId: string; userId: string; role: WorkspaceRole }
+    >({
+      query: ({ workspaceId, userId, role }) => ({
+        url: `workspace/${workspaceId}/members/${userId}/role`,
+        method: "PUT",
+        body: { role },
+      }),
+      invalidatesTags: ["Users"],
     }),
     removeWorkspaceMember: build.mutation<
       { message: string },
@@ -285,6 +305,7 @@ export const {
   useGetWorkspacesQuery,
   useCreateWorkspaceMutation,
   useGetWorkspaceMembersQuery,
+  useUpdateMemberRoleMutation,
   useGetProjectsQuery,
   useCreateProjectMutation,
   useGetTasksQuery,

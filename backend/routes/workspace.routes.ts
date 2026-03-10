@@ -9,6 +9,7 @@ import {
   removeWorkspaceMember,
   inviteToWorkspace,
   joinWorkspace,
+  updateMemberRole,
 } from "../controllers/workspace.controller";
 
 import { verifyJWT } from "../middlewares/auth";
@@ -142,6 +143,7 @@ router.get("/workspaces", verifyJWT, getMyWorkspaces);
  */
 router.get("/:workspaceId/members", verifyJWT, getWorkspaceMembers);
 router.delete("/:workspaceId/members/:memberId", verifyJWT, removeWorkspaceMember);
+router.put("/:workspaceId/members/:userId/role", verifyJWT, updateMemberRole);
 router.get("/:workspaceId", verifyJWT, getWorkspaceById);
 
 /**

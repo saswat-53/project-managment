@@ -20,9 +20,10 @@ type Props = {
   setActiveTab: (tabName: string) => void;
   onAddMember?: () => void;
   projectId?: string;
+  canManage?: boolean;
 };
 
-const ProjectHeader = ({ activeTab, setActiveTab, onAddMember, projectId }: Props) => {
+const ProjectHeader = ({ activeTab, setActiveTab, onAddMember, projectId, canManage }: Props) => {
   const router = useRouter();
   const [isModalNewProjectOpen, setIsModalNewProjectOpen] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
@@ -55,7 +56,7 @@ const ProjectHeader = ({ activeTab, setActiveTab, onAddMember, projectId }: Prop
               {deleteError && (
                 <span className="text-xs text-red-500">{deleteError}</span>
               )}
-              {projectId && (
+              {canManage && projectId && (
                 isConfirmingDelete ? (
                   <div className="flex items-center gap-1">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Delete project?</span>
@@ -84,12 +85,14 @@ const ProjectHeader = ({ activeTab, setActiveTab, onAddMember, projectId }: Prop
                   </button>
                 )
               )}
-              <button
-                className="flex items-center rounded-md bg-amber-400 px-3 py-2 text-zinc-950 hover:bg-amber-300"
-                onClick={() => setIsModalNewProjectOpen(true)}
-              >
-                <PlusSquare className="mr-2 h-5 w-5" /> Create Project
-              </button>
+              {canManage && (
+                <button
+                  className="flex items-center rounded-md bg-amber-400 px-3 py-2 text-zinc-950 hover:bg-amber-300"
+                  onClick={() => setIsModalNewProjectOpen(true)}
+                >
+                  <PlusSquare className="mr-2 h-5 w-5" /> Create Project
+                </button>
+              )}
             </div>
           }
         />

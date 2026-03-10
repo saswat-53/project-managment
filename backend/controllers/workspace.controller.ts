@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Workspace, IWorkspace } from "../models/workspace.model";
 import { WorkspaceInvite } from "../models/workspaceInvite.model";
+import { WorkspaceMember } from "../models/workspaceMember.model";
 import { User } from "../models/user.model";
 import { Project } from "../models/project.model";
 import crypto from "crypto";
@@ -12,41 +13,18 @@ import {
   joinTokenParamSchema,
 } from "../validators/workspace.validator";
 import mongoose from "mongoose";
+import { getUserWorkspaceRole } from "../utils/workspaceRole";
 
 /**
  * Create Workspace
  *
  * Creates a new workspace with the authenticated user as the owner.
  * Requires owner's email to be verified before allowing workspace creation.
- * Validates workspace name uniqueness per owner and verifies all members exist in database.
- * Owner is automatically added to members array and duplicates are prevented using Set.
- * Generates a unique invite code for workspace sharing.
+ * Seeds a WorkspaceMember record for the owner (role: "admin") and any
+ * initial members (role: "member").
  *
  * @route POST /api/workspace/workspaces
  * @access Private (requires authentication and email verification)
- *
- * Request Body:
- * - name: string (required, validated by Zod)
- * - description: string (optional)
- * - members: string[] (optional, array of user IDs, validated against DB)
- *
- * Response:
- * - 201: Workspace created successfully with workspace object
- * - 400: Validation error (name required, duplicate name, invalid format, or invalid user IDs)
- * - 403: Email not verified (owner must verify email first)
- * - 404: User not found
- * - 500: Internal server error
- *
- * @security
- * - Requires authenticated user with verified email
- * - Zod validation for request body
- * - Prevents duplicate workspace names per owner
- * - Validates all member IDs exist in User collection
- * - Returns error if any provided user ID doesn't exist
- * - Owner automatically included in members (cannot be excluded)
- * - Duplicates prevented using Set
- * - Unique invite code generated for workspace
- * - Workspace automatically added to all members' workspaces array (bidirectional relationship)
  */
 export const createWorkspace = async (req: Request, res: Response) => {
   try {
@@ -58,7 +36,6 @@ export const createWorkspace = async (req: Request, res: Response) => {
     const { name, description, members } = validation.data;
     const ownerId = (req as any).user._id;
 
-    //  Check if the owner's email is verified
     const owner = await User.findById(ownerId);
     if (!owner) {
       return res.status(404).json({ message: "User not found" });
@@ -70,19 +47,16 @@ export const createWorkspace = async (req: Request, res: Response) => {
       });
     }
 
-    // ✔ Prevent duplicate workspace name per owner
     const existing = await Workspace.findOne({ name, owner: ownerId });
     if (existing) {
       return res.status(400).json({ message: "Workspace with this name already exists" });
     }
 
-    // ✔ Validate members exist in DB
     let finalMembers: string[] = [];
     if (Array.isArray(members) && members.length > 0) {
       const users = await User.find({ _id: { $in: members } }).select("_id");
       const validIds = users.map(u => u._id.toString());
 
-      // Check if any provided member IDs don't exist in User collection
       const invalidMembers = members.filter(id => !validIds.includes(id));
       if (invalidMembers.length > 0) {
         return res.status(400).json({
@@ -93,8 +67,7 @@ export const createWorkspace = async (req: Request, res: Response) => {
       finalMembers = validIds;
     }
 
-    // ✔ Ensure owner always included and duplicates removed
-    const memberSet = new Set<string>([ownerId, ...finalMembers]);
+    const memberSet = new Set<string>([ownerId.toString(), ...finalMembers]);
     const allMembers = Array.from(memberSet).map(id => new mongoose.Types.ObjectId(id));
 
     const inviteCode = crypto.randomBytes(10).toString("hex");
@@ -107,11 +80,22 @@ export const createWorkspace = async (req: Request, res: Response) => {
       inviteCode,
     });
 
-    // Add workspace to all members' workspaces array (bidirectional relationship)
+    // Bidirectional: add workspace to all members' workspaces array
     await User.updateMany(
       { _id: { $in: allMembers } },
       { $addToSet: { workspaces: workspace._id } }
     );
+
+    // Seed WorkspaceMember records — owner gets "admin", others get "member"
+    const ownerIdStr = ownerId.toString();
+    const memberRoleDocs = allMembers.map(memberId => ({
+      user: memberId,
+      workspace: workspace._id,
+      role: memberId.toString() === ownerIdStr ? "admin" : "member",
+    }));
+    await WorkspaceMember.insertMany(memberRoleDocs, { ordered: false }).catch(() => {
+      // Ignore duplicate key errors (upsert-like behavior)
+    });
 
     return res.status(201).json({
       message: "Workspace created successfully",
@@ -128,27 +112,41 @@ export const createWorkspace = async (req: Request, res: Response) => {
 /**
  * Get All Workspaces
  *
- * Retrieves all workspaces where the authenticated user is a member or owner.
- * Returns workspaces with populated owner and members details (name, email).
+ * Retrieves all workspaces where the authenticated user is a member.
+ * Each workspace includes the current user's workspace role (myRole) for UI gating.
  *
  * @route GET /api/workspace/workspaces
  * @access Private (requires authentication)
- *
- * Response:
- * - 200: Array of workspaces with populated owner and members
- * - 500: Internal server error
- *
- * @note Uses MongoDB populate to include user details for owner and members
  */
 export const getMyWorkspaces = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user._id;
+    const userIdStr = userId.toString();
 
     const workspaces = await Workspace.find({ members: userId })
       .populate("owner", "name email")
       .populate("members", "name email");
 
-    return res.status(200).json({ workspaces });
+    // Fetch all WorkspaceMember docs for this user in one query
+    const workspaceIds = workspaces.map(ws => ws._id);
+    const memberDocs = await WorkspaceMember.find({
+      user: userId,
+      workspace: { $in: workspaceIds },
+    });
+    const roleMap = new Map(memberDocs.map(m => [m.workspace.toString(), m.role]));
+
+    // Augment each workspace with the current user's role (fallback: owner=admin, else member)
+    const workspacesWithRole = workspaces.map(ws => {
+      const wsObj = ws.toObject();
+      const ownerId = typeof wsObj.owner === "object" && wsObj.owner !== null
+        ? (wsObj.owner as any)._id?.toString()
+        : wsObj.owner?.toString();
+      const myRole = roleMap.get(ws._id.toString())
+        ?? (ownerId === userIdStr ? "admin" : "member");
+      return { ...wsObj, myRole };
+    });
+
+    return res.status(200).json({ workspaces: workspacesWithRole });
   } catch (error) {
     console.error("Get workspaces error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -158,30 +156,11 @@ export const getMyWorkspaces = async (req: Request, res: Response) => {
 /**
  * Get Single Workspace by ID
  *
- * Retrieves a specific workspace by its ID with populated owner and members.
- * User must be a member of the workspace to view it.
- *
  * @route GET /api/workspace/:workspaceId
  * @access Private (requires authentication and workspace membership)
- *
- * URL Parameters:
- * - workspaceId: string (required, MongoDB ObjectId, validated by Zod)
- *
- * Response:
- * - 200: Workspace object with populated owner and members (name, email)
- * - 400: Validation error (invalid workspace ID format)
- * - 403: Not authorized (user is not a workspace member)
- * - 404: Workspace not found
- * - 500: Internal server error
- *
- * @security
- * - Validates workspace ID using Zod schema
- * - Verifies workspace exists
- * - Checks user is a workspace member before returning data
  */
 export const getWorkspaceById = async (req: Request, res: Response) => {
   try {
-    // Validate workspace ID parameter
     const validation = workspaceIdParamSchema.safeParse(req.params);
 
     if (!validation.success) {
@@ -201,7 +180,6 @@ export const getWorkspaceById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Workspace not found" });
     }
 
-    // Check if user is a workspace member
     const isMember = workspace.members
       .map((member: any) => member._id.toString())
       .includes(userId.toString());
@@ -221,37 +199,9 @@ export const getWorkspaceById = async (req: Request, res: Response) => {
  * Update Workspace
  *
  * Updates workspace details. Only the workspace owner can perform updates.
- * All fields are optional for partial updates.
- * Validates all member IDs against database before updating.
- * Owner is automatically preserved in members array and cannot be removed.
  *
  * @route PUT /api/workspace/:workspaceId
  * @access Private (requires authentication and ownership)
- *
- * URL Parameters:
- * - workspaceId: string (required, MongoDB ObjectId, validated by Zod)
- *
- * Request Body (all optional):
- * - name: string (optional, must not be empty if provided)
- * - description: string (optional)
- * - members: string[] (optional, array of user IDs, validated against DB)
- *
- * Response:
- * - 200: Workspace updated successfully with updated workspace object
- * - 400: Validation error (invalid ID, body format, or invalid user IDs)
- * - 403: Not authorized (user is not the workspace owner)
- * - 404: Workspace not found
- * - 500: Internal server error
- *
- * @security
- * - Validates both workspace ID and request body using Zod
- * - Verifies ownership before allowing updates
- * - Validates all member IDs exist in User collection
- * - Returns error if any provided user ID doesn't exist
- * - Owner cannot be removed from members array (auto-included)
- * - Duplicates prevented using Set
- * - Members array is ADDITIVE (adds new members to existing ones, no duplicates)
- * - Updates users' workspaces arrays when new members are added (bidirectional relationship)
  */
 export const updateWorkspace = async (req: Request, res: Response) => {
   try {
@@ -282,11 +232,9 @@ export const updateWorkspace = async (req: Request, res: Response) => {
     if (description !== undefined) workspace.description = description;
 
     if (Array.isArray(members)) {
-      // Validate members exist in DB
       const users = await User.find({ _id: { $in: members } }).select("_id");
       const validIds = users.map(u => u._id.toString());
 
-      // Check if any provided member IDs don't exist in User collection
       const invalidMembers = members.filter(id => !validIds.includes(id));
       if (invalidMembers.length > 0) {
         return res.status(400).json({
@@ -294,11 +242,8 @@ export const updateWorkspace = async (req: Request, res: Response) => {
         });
       }
 
-      // Get existing members
       const existingMemberIds = workspace.members.map(id => id.toString());
 
-      // Add new members to existing ones (additive, no duplicates using Set)
-      // Owner is always included
       const combinedMemberSet = new Set<string>([
         workspace.owner.toString(),
         ...existingMemberIds,
@@ -311,15 +256,21 @@ export const updateWorkspace = async (req: Request, res: Response) => {
         id => new mongoose.Types.ObjectId(id)
       );
 
-      // Find only new members to add
       const membersToAdd = newMemberIds.filter(id => !existingMemberIds.includes(id));
 
-      // Add workspace to new members' workspaces array
       if (membersToAdd.length > 0) {
         await User.updateMany(
           { _id: { $in: membersToAdd } },
           { $addToSet: { workspaces: workspace._id } }
         );
+
+        // Seed WorkspaceMember docs for newly added members (default role: member)
+        const newMemberDocs = membersToAdd.map(id => ({
+          user: id,
+          workspace: workspace._id,
+          role: "member",
+        }));
+        await WorkspaceMember.insertMany(newMemberDocs, { ordered: false }).catch(() => {});
       }
     }
 
@@ -339,21 +290,11 @@ export const updateWorkspace = async (req: Request, res: Response) => {
 /**
  * Get Workspace Members
  *
- * Retrieves all members of a workspace with their profile details.
- * User must be a member of the workspace to access this endpoint.
+ * Retrieves all members with their profile details AND their workspace role.
+ * The workspaceRole field enables per-workspace RBAC in the frontend.
  *
  * @route GET /api/workspace/:workspaceId/members
  * @access Private (requires authentication and workspace membership)
- *
- * URL Parameters:
- * - workspaceId: string (required, MongoDB ObjectId)
- *
- * Response:
- * - 200: { success: true, data: members[] } with _id, name, email, avatarUrl, role, position
- * - 400: Invalid workspace ID format
- * - 403: User is not a workspace member
- * - 404: Workspace not found
- * - 500: Internal server error
  */
 export const getWorkspaceMembers = async (req: Request, res: Response) => {
   try {
@@ -381,7 +322,18 @@ export const getWorkspaceMembers = async (req: Request, res: Response) => {
     const members = await User.find({ _id: { $in: workspace.members } })
       .select("_id name email avatarUrl role position");
 
-    return res.status(200).json({ success: true, data: members });
+    // Join with WorkspaceMember to get per-workspace roles
+    const memberDocs = await WorkspaceMember.find({ workspace: workspaceId });
+    const roleMap = new Map(memberDocs.map(m => [m.user.toString(), m.role]));
+
+    const ownerIdStr = workspace.owner.toString();
+    const membersWithRole = members.map(m => ({
+      ...m.toObject(),
+      workspaceRole: roleMap.get(m._id.toString())
+        ?? (m._id.toString() === ownerIdStr ? "admin" : "member"),
+    }));
+
+    return res.status(200).json({ success: true, data: membersWithRole });
   } catch (error) {
     console.error("Get workspace members error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -390,26 +342,10 @@ export const getWorkspaceMembers = async (req: Request, res: Response) => {
 
 /**
  * Invite a user to a workspace.
- *
- * Owner sends an invite to an email address. If that email belongs to a registered
- * user the invite is created and the join URL is returned. If the email is not
- * registered the invite is still created — the frontend should direct the recipient
- * to /register?invite=<token> and then to the join flow after sign-up.
- *
- * An existing pending invite for the same email+workspace is revoked and replaced.
+ * Admins and managers can send invites.
  *
  * @route POST /api/workspace/:workspaceId/invite
- * @access Private (owner only)
- *
- * Request Body:
- * - email: string (required)
- *
- * Response:
- * - 200: { message, inviteUrl }
- * - 400: Validation error or already a member
- * - 403: Not the workspace owner
- * - 404: Workspace not found
- * - 500: Internal server error
+ * @access Private (admin or manager)
  */
 export const inviteToWorkspace = async (req: Request, res: Response) => {
   try {
@@ -432,11 +368,12 @@ export const inviteToWorkspace = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Workspace not found" });
     }
 
-    if (workspace.owner.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Only the owner can send invites" });
+    // Only admins and managers can invite
+    const requesterRole = await getUserWorkspaceRole(userId.toString(), workspaceId);
+    if (requesterRole !== "admin" && requesterRole !== "manager") {
+      return res.status(403).json({ message: "Only admins and managers can send invites" });
     }
 
-    // Check if the email belongs to an existing member
     const existingUser = await User.findOne({ email: email.toLowerCase() }).select("_id");
     if (existingUser) {
       const isAlreadyMember = workspace.members
@@ -448,17 +385,15 @@ export const inviteToWorkspace = async (req: Request, res: Response) => {
       }
     }
 
-    // Revoke any existing pending invite for this email + workspace
     await WorkspaceInvite.deleteOne({
       workspace: workspaceId,
       invitedEmail: email.toLowerCase(),
       used: false,
     });
 
-    // Generate token — raw goes in the URL, hashed is stored in DB
     const rawToken = crypto.randomBytes(20).toString("hex");
     const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     await WorkspaceInvite.create({
       workspace: workspaceId,
@@ -473,7 +408,6 @@ export const inviteToWorkspace = async (req: Request, res: Response) => {
     return res.status(200).json({
       message: "Invite created successfully",
       inviteUrl,
-      // Tells the frontend whether the recipient already has an account
       recipientExists: !!existingUser,
     });
   } catch (error) {
@@ -484,25 +418,10 @@ export const inviteToWorkspace = async (req: Request, res: Response) => {
 
 /**
  * Join a workspace via invite token.
- *
- * The logged-in user submits the raw token from the invite URL. The backend
- * hashes it, looks up the invite, validates it, and adds the user to the workspace.
- * The token is marked as used immediately after a successful join.
- *
- * The logged-in user's email must match the invitedEmail on the invite — invites
- * are not transferable.
+ * Creates a WorkspaceMember record with role "member" for the joining user.
  *
  * @route POST /api/workspace/join/:token
  * @access Private (requires authentication)
- *
- * URL Parameters:
- * - token: string (raw invite token from the invite URL)
- *
- * Response:
- * - 200: { message, workspace }
- * - 400: Validation error, token expired/used, or email mismatch
- * - 404: Invalid token
- * - 500: Internal server error
  */
 export const joinWorkspace = async (req: Request, res: Response) => {
   try {
@@ -514,7 +433,6 @@ export const joinWorkspace = async (req: Request, res: Response) => {
     const { token: rawToken } = validation.data;
     const userId = (req as any).user._id;
 
-    // Hash the raw token to look it up in the DB
     const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
 
     const invite = await WorkspaceInvite.findOne({ token: hashedToken });
@@ -530,7 +448,6 @@ export const joinWorkspace = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "This invite link has expired" });
     }
 
-    // Ensure the logged-in user's email matches the invite recipient
     const user = await User.findById(userId).select("email");
     if (!user || user.email.toLowerCase() !== invite.invitedEmail) {
       return res.status(400).json({
@@ -548,19 +465,23 @@ export const joinWorkspace = async (req: Request, res: Response) => {
       .includes(userId.toString());
 
     if (isAlreadyMember) {
-      // Mark as used and return success — idempotent
       invite.used = true;
       await invite.save();
       return res.status(200).json({ message: "You are already a member of this workspace", workspace });
     }
 
-    // Add user to workspace and update user's workspaces array
     workspace.members.push(new mongoose.Types.ObjectId(userId));
     await workspace.save();
 
     await User.findByIdAndUpdate(userId, { $addToSet: { workspaces: workspace._id } });
 
-    // Invalidate the token — one-time use only
+    // Create WorkspaceMember record with default "member" role
+    await WorkspaceMember.findOneAndUpdate(
+      { user: userId, workspace: workspace._id },
+      { role: "member" },
+      { upsert: true, new: true }
+    );
+
     invite.used = true;
     await invite.save();
 
@@ -576,12 +497,13 @@ export const joinWorkspace = async (req: Request, res: Response) => {
 
 /**
  * Remove a member from a workspace.
- * Only the workspace owner can remove members.
- * Owner cannot remove themselves.
- * Removes workspace from the removed user's workspaces array (bidirectional cleanup).
+ * Admins and managers can remove members.
+ * Managers cannot remove admins.
+ * The workspace owner cannot be removed.
+ * Also cleans up the WorkspaceMember record.
  *
  * @route DELETE /api/workspace/:workspaceId/members/:memberId
- * @access Private (owner only)
+ * @access Private (admin or manager)
  */
 export const removeWorkspaceMember = async (req: Request, res: Response) => {
   try {
@@ -600,12 +522,23 @@ export const removeWorkspaceMember = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Workspace not found" });
     }
 
-    if (workspace.owner.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Only the owner can remove members" });
+    // Only admins and managers can remove members
+    const requesterRole = await getUserWorkspaceRole(userId.toString(), workspaceId);
+    if (requesterRole !== "admin" && requesterRole !== "manager") {
+      return res.status(403).json({ message: "Only admins and managers can remove members" });
     }
 
+    // The workspace owner can never be removed
     if (workspace.owner.toString() === memberId) {
       return res.status(400).json({ message: "Cannot remove the workspace owner" });
+    }
+
+    // Managers cannot remove admins
+    if (requesterRole === "manager") {
+      const targetRole = await getUserWorkspaceRole(memberId, workspaceId);
+      if (targetRole === "admin") {
+        return res.status(403).json({ message: "Managers cannot remove admins" });
+      }
     }
 
     const isMember = workspace.members.map((id) => id.toString()).includes(memberId);
@@ -618,6 +551,9 @@ export const removeWorkspaceMember = async (req: Request, res: Response) => {
 
     await User.findByIdAndUpdate(memberId, { $pull: { workspaces: workspace._id } });
 
+    // Clean up WorkspaceMember record
+    await WorkspaceMember.deleteOne({ user: memberId, workspace: workspaceId });
+
     return res.status(200).json({ message: "Member removed successfully" });
   } catch (error) {
     console.error("Remove workspace member error:", error);
@@ -627,12 +563,14 @@ export const removeWorkspaceMember = async (req: Request, res: Response) => {
 
 /**
  * Delete a workspace.
- * Only the workspace owner can delete.
+ * Only workspace admins can delete.
  * Cascade delete automatically handled by Workspace pre-delete hook.
+ *
+ * @route DELETE /api/workspace/:workspaceId
+ * @access Private (admin only)
  */
 export const deleteWorkspace = async (req: Request, res: Response) => {
   try {
-    // Validate workspace ID parameter
     const validation = workspaceIdParamSchema.safeParse(req.params);
 
     if (!validation.success) {
@@ -650,11 +588,12 @@ export const deleteWorkspace = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Workspace not found" });
     }
 
-    if (workspace.owner.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Not allowed to delete" });
+    // Only admins can delete a workspace
+    const requesterRole = await getUserWorkspaceRole(userId.toString(), workspaceId);
+    if (requesterRole !== "admin") {
+      return res.status(403).json({ message: "Only admins can delete workspaces" });
     }
 
-    // Cascade delete handled by Workspace pre-delete hook
     await workspace.deleteOne();
 
     return res
@@ -662,6 +601,61 @@ export const deleteWorkspace = async (req: Request, res: Response) => {
       .json({ message: "Workspace deleted successfully" });
   } catch (error) {
     console.error("Delete workspace error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * Update a member's workspace role.
+ * Only workspace admins can change roles.
+ *
+ * @route PUT /api/workspace/:workspaceId/members/:userId/role
+ * @access Private (admin only)
+ */
+export const updateMemberRole = async (req: Request, res: Response) => {
+  try {
+    const { workspaceId, userId: targetUserId } = req.params;
+    const { role } = req.body;
+    const requesterId = (req as any).user._id.toString();
+
+    if (
+      !mongoose.Types.ObjectId.isValid(workspaceId) ||
+      !mongoose.Types.ObjectId.isValid(targetUserId)
+    ) {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+
+    if (!["admin", "manager", "member"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role. Must be admin, manager, or member." });
+    }
+
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ message: "Workspace not found" });
+    }
+
+    // Only admins can change member roles
+    const requesterRole = await getUserWorkspaceRole(requesterId, workspaceId);
+    if (requesterRole !== "admin") {
+      return res.status(403).json({ message: "Only admins can change member roles" });
+    }
+
+    // Target must be a workspace member
+    const isMember = workspace.members.map(id => id.toString()).includes(targetUserId);
+    if (!isMember) {
+      return res.status(404).json({ message: "User is not a workspace member" });
+    }
+
+    // Upsert the WorkspaceMember role
+    await WorkspaceMember.findOneAndUpdate(
+      { user: targetUserId, workspace: workspaceId },
+      { role },
+      { upsert: true, new: true }
+    );
+
+    return res.status(200).json({ message: "Member role updated successfully" });
+  } catch (error) {
+    console.error("Update member role error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

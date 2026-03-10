@@ -6,9 +6,11 @@ import React from "react";
 type Props = {
   id: string;
   setIsModalNewTaskOpen: (isOpen: boolean) => void;
+  canManage?: boolean;
+  currentUserId?: string;
 };
 
-const ListView = ({ id, setIsModalNewTaskOpen }: Props) => {
+const ListView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Props) => {
   const { data: tasks } = useGetTasksQuery({ projectId: id });
 
   return (
@@ -28,7 +30,14 @@ const ListView = ({ id, setIsModalNewTaskOpen }: Props) => {
         />
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-        {tasks?.map((task: Task) => <TaskCard key={task._id} task={task} />)}
+        {tasks?.map((task: Task) => (
+          <TaskCard
+            key={task._id}
+            task={task}
+            canManage={canManage}
+            currentUserId={currentUserId}
+          />
+        ))}
       </div>
     </div>
   );
