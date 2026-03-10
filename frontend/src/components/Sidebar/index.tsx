@@ -46,7 +46,7 @@ const Sidebar = () => {
   };
 
   const sidebarClassNames = `fixed flex flex-col h-[100%] justify-between shadow-xl
-    transition-all duration-300 h-full z-40 overflow-y-auto bg-white dark:bg-zinc-950
+    transition-all duration-300 h-full z-40 overflow-y-auto bg-white dark:bg-dark-bg
     ${isSidebarCollapsed ? "w-0 hidden" : "w-64"}
   `;
 
@@ -54,7 +54,7 @@ const Sidebar = () => {
     <div className={sidebarClassNames}>
       <div className="flex h-[100%] w-full flex-col justify-start">
         {/* TOP LOGO */}
-        <div className="z-50 flex min-h-[56px] w-64 items-center justify-between bg-white px-6 pt-3 dark:bg-zinc-950">
+        <div className="z-50 flex min-h-[52px] w-64 items-center justify-between border-b border-gray-200 bg-white px-6 pt-3 dark:border-stroke-dark dark:bg-dark-bg">
           <div className="flex items-center gap-2.5">
             <div className="flex h-7 w-7 items-center justify-center border-2 border-amber-400">
               <div className="h-2.5 w-2.5 bg-amber-400" />
@@ -76,7 +76,7 @@ const Sidebar = () => {
         </div>
 
         {/* ACTIVE WORKSPACE */}
-        <div className="flex items-center justify-between border-y border-gray-200 px-8 py-4 dark:border-zinc-800">
+        <div className="flex items-center justify-between px-8 py-4">
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400 dark:text-zinc-500">
               Workspace
@@ -87,7 +87,7 @@ const Sidebar = () => {
           </div>
           <Link
             href="/workspaces"
-            className="ml-2 shrink-0 border border-gray-300 px-2 py-1 text-xs text-gray-500 transition-colors hover:border-amber-400 hover:text-amber-500 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
+            className="ml-2 shrink-0 border border-gray-300 px-2 py-1 text-xs text-gray-500 transition-colors hover:border-amber-400 hover:text-amber-500 dark:border-stroke-dark dark:text-zinc-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
           >
             Switch
           </Link>
@@ -124,7 +124,7 @@ const Sidebar = () => {
       </div>
 
       {/* BOTTOM — user sign out (mobile) */}
-      <div className="z-10 mt-32 flex w-full flex-col items-center gap-4 border-t border-gray-200 bg-white px-8 py-4 dark:border-zinc-800 dark:bg-zinc-950 md:hidden">
+      <div className="z-10 mt-32 flex w-full flex-col items-center gap-4 border-t border-gray-200 bg-white px-8 py-4 dark:border-stroke-dark dark:bg-dark-bg md:hidden">
         <div className="flex w-full items-center">
           <User className="h-6 w-6 cursor-pointer self-center rounded-full text-gray-400 dark:text-zinc-400" />
           <button
@@ -153,8 +153,8 @@ const SidebarLink = ({ href, icon: Icon, label }: SidebarLinkProps) => {
   return (
     <Link href={href} className="w-full">
       <div
-        className={`relative flex cursor-pointer items-center gap-3 transition-colors hover:bg-gray-100 dark:hover:bg-zinc-800/60 ${
-          isActive ? "bg-gray-100 dark:bg-zinc-800" : ""
+        className={`relative flex cursor-pointer items-center gap-3 transition-colors hover:bg-gray-100 dark:hover:bg-dark-secondary/60 ${
+          isActive ? "bg-gray-100 dark:bg-dark-secondary" : ""
         } justify-start px-8 py-3`}
       >
         {isActive && (

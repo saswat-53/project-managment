@@ -66,11 +66,11 @@ const FeatureCard = ({
   desc: string;
   icon: React.ReactNode;
 }) => (
-  <div className="group relative border border-zinc-800 bg-zinc-900/40 p-7 transition-all duration-300 hover:border-amber-400/40 hover:bg-zinc-900/80">
+  <div className="group relative border border-stroke-dark bg-dark-secondary/40 p-7 transition-all duration-300 hover:border-amber-400/40 hover:bg-dark-secondary/80">
     <div className="absolute -left-px -top-px h-4 w-4 border-l border-t border-amber-400/0 transition-all duration-300 group-hover:border-amber-400/60" />
     <div className="absolute -bottom-px -right-px h-4 w-4 border-b border-r border-amber-400/0 transition-all duration-300 group-hover:border-amber-400/60" />
     <div className="mb-5 flex items-start justify-between">
-      <div className="flex h-11 w-11 items-center justify-center border border-zinc-700 text-amber-400 transition-colors group-hover:border-amber-400/40">
+      <div className="flex h-11 w-11 items-center justify-center border border-stroke-dark text-amber-400 transition-colors group-hover:border-amber-400/40">
         {icon}
       </div>
       <span className="font-mono text-xs text-zinc-700">{index}</span>
@@ -82,11 +82,11 @@ const FeatureCard = ({
 
 /* ── Mock task board UI (decorative hero graphic) ────────── */
 const MockBoard = () => (
-  <div className="relative h-full w-full overflow-hidden border border-zinc-800 bg-zinc-900/60 font-mono">
+  <div className="relative h-full w-full overflow-hidden border border-stroke-dark bg-dark-secondary/60 font-mono">
     <div className="scanline-bar pointer-events-none absolute inset-x-0 h-8 bg-gradient-to-b from-transparent via-amber-400 to-transparent" />
 
     {/* top bar */}
-    <div className="flex items-center gap-2 border-b border-zinc-800 px-4 py-3">
+    <div className="flex items-center gap-2 border-b border-stroke-dark px-4 py-3">
       <div className="flex h-5 w-5 items-center justify-center border border-amber-400">
         <div className="h-1.5 w-1.5 bg-amber-400" />
       </div>
@@ -94,30 +94,30 @@ const MockBoard = () => (
         ProjectFlow
       </span>
       <div className="ml-auto flex gap-1.5">
-        <div className="h-2 w-2 rounded-full bg-zinc-700" />
-        <div className="h-2 w-2 rounded-full bg-zinc-700" />
+        <div className="h-2 w-2 rounded-full bg-dark-secondary" />
+        <div className="h-2 w-2 rounded-full bg-dark-secondary" />
         <div className="h-2 w-2 rounded-full bg-amber-400/60" />
       </div>
     </div>
 
     {/* columns */}
-    <div className="flex h-[calc(100%-44px)] gap-0 divide-x divide-zinc-800 overflow-hidden">
+    <div className="flex h-[calc(100%-44px)] gap-0 divide-x divide-dark-bg overflow-hidden">
       {/* Todo */}
       <div className="flex w-1/3 flex-col">
-        <div className="border-b border-zinc-800 px-3 py-2">
+        <div className="border-b border-stroke-dark px-3 py-2">
           <span className="text-xs uppercase tracking-[0.2em] text-zinc-500">Todo</span>
-          <span className="ml-2 bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">3</span>
+          <span className="ml-2 bg-dark-secondary px-1.5 py-0.5 text-[10px] text-zinc-400">3</span>
         </div>
         <div className="flex flex-col gap-2 overflow-hidden p-2">
           {["Design system audit", "API integration", "Write tests"].map((t, i) => (
             <div
               key={t}
-              className="border border-zinc-800 bg-zinc-950 px-3 py-2.5"
+              className="border border-stroke-dark bg-dark-bg px-3 py-2.5"
               style={{ opacity: 1 - i * 0.15 }}
             >
               <p className="text-xs text-zinc-400">{t}</p>
               <div className="mt-1.5 flex items-center gap-1.5">
-                <div className="h-1 w-1 rounded-full bg-zinc-700" />
+                <div className="h-1 w-1 rounded-full bg-dark-secondary" />
                 <span className="text-[10px] text-zinc-600">{["Mar 10", "Mar 12", "Mar 14"][i]}</span>
               </div>
             </div>
@@ -127,13 +127,13 @@ const MockBoard = () => (
 
       {/* In Progress */}
       <div className="flex w-1/3 flex-col">
-        <div className="border-b border-zinc-800 px-3 py-2">
+        <div className="border-b border-stroke-dark px-3 py-2">
           <span className="text-xs uppercase tracking-[0.2em] text-amber-400/70">In Progress</span>
           <span className="ml-2 bg-amber-400/10 px-1.5 py-0.5 text-[10px] text-amber-400/60">2</span>
         </div>
         <div className="flex flex-col gap-2 overflow-hidden p-2">
           {["Auth flow refactor", "Dashboard widgets"].map((t, i) => (
-            <div key={t} className="border border-amber-400/20 bg-zinc-950 px-3 py-2.5">
+            <div key={t} className="border border-amber-400/20 bg-dark-bg px-3 py-2.5">
               <p className="text-xs text-zinc-300">{t}</p>
               <div className="mt-1.5 flex items-center gap-1.5">
                 <div className="h-1 w-1 rounded-full bg-amber-400/50" />
@@ -146,16 +146,16 @@ const MockBoard = () => (
 
       {/* Done */}
       <div className="flex w-1/3 flex-col">
-        <div className="border-b border-zinc-800 px-3 py-2">
+        <div className="border-b border-stroke-dark px-3 py-2">
           <span className="text-xs uppercase tracking-[0.2em] text-zinc-500">Done</span>
-          <span className="ml-2 bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">5</span>
+          <span className="ml-2 bg-dark-secondary px-1.5 py-0.5 text-[10px] text-zinc-400">5</span>
         </div>
         <div className="flex flex-col gap-2 overflow-hidden p-2">
           {["Workspace setup", "Member invites", "Project creation", "Task board", "Dark mode"].map(
             (t, i) => (
               <div
                 key={t}
-                className="border border-zinc-800 bg-zinc-950 px-3 py-2"
+                className="border border-stroke-dark bg-dark-bg px-3 py-2"
                 style={{ opacity: 0.5 - i * 0.06 }}
               >
                 <div className="flex items-center gap-1.5">
@@ -176,7 +176,7 @@ export default function LandingPage() {
     <>
       <style>{STYLES}</style>
 
-      <div className="min-h-screen bg-zinc-950 font-mono text-white">
+      <div className="min-h-screen bg-dark-bg font-mono text-white">
         {/* ambient grid */}
         <div
           className="pointer-events-none fixed inset-0 opacity-[0.035]"
@@ -188,7 +188,7 @@ export default function LandingPage() {
         />
 
         {/* ── NAV ─────────────────────────────────────────── */}
-        <nav className="anim-fade-in sticky top-0 z-50 flex items-center justify-between border-b border-zinc-800/60 bg-zinc-950/90 px-6 py-4 backdrop-blur-md md:px-12">
+        <nav className="anim-fade-in sticky top-0 z-50 flex items-center justify-between border-b border-stroke-dark/60 bg-dark-bg/90 px-6 py-4 backdrop-blur-md md:px-12">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center border-2 border-amber-400">
               <div className="h-3 w-3 bg-amber-400" />
@@ -258,7 +258,7 @@ export default function LandingPage() {
             </div>
 
             {/* Stats row */}
-            <div className="anim-fade-up delay-500 mt-14 flex gap-10 border-t border-zinc-800 pt-8">
+            <div className="anim-fade-up delay-500 mt-14 flex gap-10 border-t border-stroke-dark pt-8">
               {[
                 { n: "3", label: "Task views" },
                 { n: "∞", label: "Workspaces" },
@@ -291,7 +291,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── TICKER ──────────────────────────────────────── */}
-        <div className="overflow-hidden border-y border-zinc-800 bg-zinc-900/40 py-4">
+        <div className="overflow-hidden border-y border-stroke-dark bg-dark-secondary/40 py-4">
           <div className="marquee-track">
             {[...Array(2)].map((_, pass) => (
               <div key={pass} className="flex items-center gap-0">
@@ -325,7 +325,7 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid gap-px border border-zinc-800 bg-zinc-800 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-px border border-stroke-dark bg-dark-secondary sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 index: "01",
@@ -396,7 +396,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── HOW IT WORKS ────────────────────────────────── */}
-        <section className="border-t border-zinc-800 px-6 py-28 md:px-12 lg:px-20">
+        <section className="border-t border-stroke-dark px-6 py-28 md:px-12 lg:px-20">
           <div className="mb-16">
             <SectionLabel>Workflow</SectionLabel>
             <AmberLine />
@@ -407,7 +407,7 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid gap-0 divide-y divide-zinc-800 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+          <div className="grid gap-0 divide-y divide-dark-bg lg:grid-cols-3 lg:divide-x lg:divide-y-0">
             {[
               {
                 n: "I",
@@ -425,7 +425,7 @@ export default function LandingPage() {
                 desc: "Break work into tasks, assign owners, set due dates, and move them from Todo → Done.",
               },
             ].map(({ n, title, desc }) => (
-              <div key={n} className="group relative p-10 transition-colors hover:bg-zinc-900/40">
+              <div key={n} className="group relative p-10 transition-colors hover:bg-dark-secondary/40">
                 <div className="mb-6 font-mono text-6xl font-light text-zinc-800 transition-colors group-hover:text-amber-400/20">
                   {n}
                 </div>
@@ -438,7 +438,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── CTA BANNER ──────────────────────────────────── */}
-        <section className="relative overflow-hidden border-t border-zinc-800 px-6 py-28 md:px-12 lg:px-20">
+        <section className="relative overflow-hidden border-t border-stroke-dark px-6 py-28 md:px-12 lg:px-20">
           <div className="absolute right-12 top-1/2 h-48 w-48 -translate-y-1/2 rotate-45 border border-amber-400/8" />
           <div className="absolute right-24 top-1/2 h-32 w-32 -translate-y-1/2 rotate-45 border border-amber-400/12" />
           <div className="absolute left-[60%] top-8 h-2 w-2 rounded-full bg-amber-400/40 amber-pulse" />
@@ -465,7 +465,7 @@ export default function LandingPage() {
               </Link>
               <Link
                 href="/login"
-                className="border border-zinc-700 px-8 py-4 text-sm uppercase tracking-[0.15em] text-zinc-400 transition-all hover:border-zinc-500 hover:text-zinc-200"
+                className="border border-stroke-dark px-8 py-4 text-sm uppercase tracking-[0.15em] text-zinc-400 transition-all hover:border-zinc-500 hover:text-zinc-200"
               >
                 Sign in →
               </Link>
@@ -474,7 +474,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── FOOTER ──────────────────────────────────────── */}
-        <footer className="border-t border-zinc-800 px-6 py-8 md:px-12 lg:px-20">
+        <footer className="border-t border-stroke-dark px-6 py-8 md:px-12 lg:px-20">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
               <div className="flex h-7 w-7 items-center justify-center border border-amber-400/60">

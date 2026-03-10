@@ -32,11 +32,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 font-mono">
+    <div className="flex min-h-screen bg-dark-bg font-mono">
       {/* ── Left Panel — geometric art ─────────────────────── */}
       <div
         className="relative hidden w-[46%] overflow-hidden lg:flex"
-        style={{ background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%)" }}
+        style={{ background: "linear-gradient(135deg, rgb(var(--color-bg)) 0%, rgb(var(--color-surface)) 100%)" }}
       >
         {/* Grid texture */}
         <div
@@ -116,7 +116,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="you@company.com"
-                className="w-full border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white placeholder-zinc-700 outline-none transition-all duration-200 focus:border-amber-400 focus:ring-0"
+                className="w-full border border-stroke-dark bg-dark-secondary px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition-all duration-200 focus:border-amber-400 focus:ring-0"
               />
             </div>
 
@@ -133,7 +133,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full border border-zinc-800 bg-zinc-900 px-4 py-3 pr-11 text-sm text-white placeholder-zinc-700 outline-none transition-all duration-200 focus:border-amber-400 focus:ring-0"
+                  className="w-full border border-stroke-dark bg-dark-secondary px-4 py-3 pr-11 text-sm text-white placeholder-zinc-500 outline-none transition-all duration-200 focus:border-amber-400 focus:ring-0"
                 />
                 <button
                   type="button"
@@ -176,7 +176,7 @@ export default function LoginPage() {
           </form>
 
           {/* Footer */}
-          <div className="mt-8 border-t border-zinc-800 pt-8">
+          <div className="mt-8 border-t border-stroke-dark pt-8">
             <p className="text-xs text-zinc-600">
               No account?{" "}
               <Link

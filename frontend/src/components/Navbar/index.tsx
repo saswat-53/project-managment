@@ -31,7 +31,7 @@ const Navbar = () => {
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-stroke-dark dark:bg-dark-bg">
       {/* Left — sidebar toggle */}
       <div className="flex items-center gap-8">
         {!isSidebarCollapsed ? null : (
@@ -47,7 +47,7 @@ const Navbar = () => {
       <div className="flex items-center">
         <button
           onClick={() => dispatch(setIsDarkMode(!isDarkMode))}
-          className="rounded p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+          className="rounded p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-dark-secondary dark:hover:text-white"
         >
           {isDarkMode ? (
             <Sun className="h-5 w-5 cursor-pointer" />
@@ -57,11 +57,11 @@ const Navbar = () => {
         </button>
         <Link
           href="/settings"
-          className="h-min w-min rounded p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+          className="h-min w-min rounded p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-dark-secondary dark:hover:text-white"
         >
           <Settings className="h-5 w-5 cursor-pointer" />
         </Link>
-        <div className="ml-2 mr-5 hidden min-h-[2em] w-px bg-gray-200 dark:bg-zinc-800 md:inline-block" />
+        <div className="ml-2 mr-5 hidden min-h-[2em] w-px bg-gray-200 dark:bg-stroke-dark md:inline-block" />
         <div className="hidden items-center justify-between md:flex">
           <div className="align-center flex h-8 w-8 justify-center">
             {currentUser?.avatarUrl ? (

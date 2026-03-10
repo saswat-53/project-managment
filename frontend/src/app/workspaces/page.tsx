@@ -65,7 +65,7 @@ export default function WorkspacesPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-zinc-950 font-mono text-white">
+    <div className="relative min-h-screen bg-dark-bg font-mono text-white">
       {/* Background grid */}
       <div
         className="pointer-events-none fixed inset-0 opacity-[0.05]"
@@ -77,7 +77,7 @@ export default function WorkspacesPage() {
       />
 
       {/* ── Header ─────────────────────────────────────────── */}
-      <header className="relative z-10 flex items-center justify-between border-b border-zinc-800 px-8 py-5">
+      <header className="relative z-10 flex items-center justify-between border-b border-stroke-dark px-8 py-5">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center border-2 border-amber-400">
             <div className="h-3 w-3 bg-amber-400" />
@@ -88,7 +88,7 @@ export default function WorkspacesPage() {
         </div>
         <button
           onClick={handleLogout}
-          className="border border-zinc-700 px-5 py-2.5 text-sm uppercase tracking-[0.15em] text-zinc-500 transition-colors hover:border-zinc-500 hover:text-zinc-300"
+          className="border border-stroke-dark px-5 py-2.5 text-sm uppercase tracking-[0.15em] text-zinc-500 transition-colors hover:border-zinc-500 hover:text-zinc-300"
         >
           Sign Out
         </button>
@@ -140,9 +140,9 @@ export default function WorkspacesPage() {
 
         {/* Empty state */}
         {!isLoading && !isError && workspaces?.length === 0 && (
-          <div className="relative border border-dashed border-zinc-800 px-8 py-20 text-center">
-            <div className="absolute left-4 top-4 h-6 w-6 border-l border-t border-zinc-700" />
-            <div className="absolute bottom-4 right-4 h-6 w-6 border-b border-r border-zinc-700" />
+          <div className="relative border border-dashed border-stroke-dark px-8 py-20 text-center">
+            <div className="absolute left-4 top-4 h-6 w-6 border-l border-t border-stroke-dark" />
+            <div className="absolute bottom-4 right-4 h-6 w-6 border-b border-r border-stroke-dark" />
             <p className="text-4xl text-zinc-800">[ ]</p>
             <p className="mt-4 text-base text-zinc-500">No workspaces yet.</p>
             <button
@@ -174,10 +174,10 @@ export default function WorkspacesPage() {
       {/* ── Create Modal ───────────────────────────────────── */}
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/90 px-6 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-dark-bg/90 px-6 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
         >
-          <div className="relative w-full max-w-[440px] border border-zinc-700 bg-zinc-900 p-10">
+          <div className="relative w-full max-w-[440px] border border-dark-tertiary bg-dark-secondary p-10">
             <div className="absolute -left-px -top-px h-5 w-5 border-l-2 border-t-2 border-amber-400" />
             <div className="absolute -bottom-px -right-px h-5 w-5 border-b-2 border-r-2 border-amber-400" />
 
@@ -197,7 +197,7 @@ export default function WorkspacesPage() {
                   onChange={(e) => setWsName(e.target.value)}
                   required
                   placeholder="e.g. Acme Corp"
-                  className="w-full border border-zinc-700 bg-zinc-800 px-4 py-3 text-base text-white placeholder-zinc-600 outline-none focus:border-amber-400"
+                  className="w-full border border-dark-tertiary bg-dark-secondary px-4 py-3 text-base text-white placeholder-zinc-600 outline-none focus:border-amber-400"
                 />
               </div>
 
@@ -210,7 +210,7 @@ export default function WorkspacesPage() {
                   onChange={(e) => setWsDesc(e.target.value)}
                   placeholder="Optional — what's this workspace for?"
                   rows={3}
-                  className="w-full resize-none border border-zinc-700 bg-zinc-800 px-4 py-3 text-base text-white placeholder-zinc-600 outline-none focus:border-amber-400"
+                  className="w-full resize-none border border-dark-tertiary bg-dark-secondary px-4 py-3 text-base text-white placeholder-zinc-600 outline-none focus:border-amber-400"
                 />
               </div>
 
@@ -222,7 +222,7 @@ export default function WorkspacesPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 border border-zinc-700 py-3 text-sm uppercase tracking-[0.15em] text-zinc-500 transition-all hover:border-zinc-500 hover:text-zinc-300"
+                  className="flex-1 border border-stroke-dark py-3 text-sm uppercase tracking-[0.15em] text-zinc-500 transition-all hover:border-zinc-500 hover:text-zinc-300"
                 >
                   Cancel
                 </button>
@@ -279,7 +279,7 @@ function WorkspaceCard({
   return (
     <div
       onClick={() => !isDeleteConfirming && onSelect(workspace)}
-      className="group relative cursor-pointer border border-zinc-800 bg-zinc-900/50 p-7 text-left transition-all duration-200 hover:border-amber-400/50 hover:bg-zinc-900"
+      className="group relative cursor-pointer border border-stroke-dark bg-dark-secondary/50 p-7 text-left transition-all duration-200 hover:border-amber-400/50 hover:bg-dark-secondary"
     >
       {/* Index badge */}
       <div className="absolute right-4 top-4 text-xs text-zinc-700 transition-colors group-hover:text-amber-400/50">
@@ -290,7 +290,7 @@ function WorkspaceCard({
       <div className="absolute left-0 top-0 h-px w-0 bg-amber-400 transition-all duration-300 group-hover:w-full" />
 
       {/* Icon */}
-      <div className="mb-5 flex h-11 w-11 items-center justify-center border border-zinc-700 transition-colors group-hover:border-amber-400/40">
+      <div className="mb-5 flex h-11 w-11 items-center justify-center border border-stroke-dark transition-colors group-hover:border-amber-400/40">
         <span className="text-xl text-zinc-600 transition-colors group-hover:text-amber-400">
           ⬡
         </span>
@@ -313,7 +313,7 @@ function WorkspaceCard({
 
       {/* Footer */}
       <div
-        className="flex items-center justify-between border-t border-zinc-800 pt-4 transition-colors group-hover:border-zinc-700"
+        className="flex items-center justify-between border-t border-stroke-dark pt-4 transition-colors group-hover:border-stroke-dark"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Left — delete (owners) or member count (non-owners) */}

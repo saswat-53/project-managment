@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── DARK THEME PALETTE ────────────────────────────────────────
+   Edit ONLY these values to retheme the entire dark UI at once.
+   Format must be "R G B" (space-separated) for Tailwind opacity
+   modifiers (e.g. bg-dark-bg/80) to work correctly.
+────────────────────────────────────────────────────────────── */
+:root {
+  --color-bg:      39 39 42;   /* #27272a  main page backgrounds  */
+  --color-surface: 63 63 70;   /* #3f3f46  cards, sidebar, modals */
+  --color-border:  82 82 91;   /* #52525b  borders & dividers     */
+}
+
 *,
 *::before,
 *::after {
@@ -16,7 +27,7 @@ body,
   width: 100%;
   @apply text-sm;
   @apply bg-white;
-  @apply dark:bg-black;
+  @apply dark:bg-dark-bg;
 }
 
 /* TIMELINE STYLING */
