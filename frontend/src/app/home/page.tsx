@@ -1,6 +1,6 @@
 "use client";
 
-import { Task, useGetProjectsQuery, useGetTasksQuery } from "@/state/api";
+import { Task, useGetProjectsQuery, useGetTasksQuery, useGetWorkspacesQuery } from "@/state/api";
 import { useEffect, useCallback, useState } from "react";
 import { useAppSelector } from "../redux";
 import { DataGrid } from "@mui/x-data-grid";
@@ -41,6 +41,10 @@ const HomePage = () => {
 
   const activeWorkspaceId = useAppSelector((state) => state.global.activeWorkspaceId);
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+
+  const { data: workspaces } = useGetWorkspacesQuery();
+  const activeWorkspace = workspaces?.find((w) => w._id === activeWorkspaceId);
+  const canManage = activeWorkspace?.myRole === "admin" || activeWorkspace?.myRole === "manager";
 
   const { data: projects, isLoading: isProjectsLoading } = useGetProjectsQuery(
     activeWorkspaceId ?? "",
@@ -111,7 +115,7 @@ const HomePage = () => {
             <h3 className="text-lg font-semibold dark:text-white">
               Projects ({projects.length})
             </h3>
-            {projects.length > 0 && (
+            {projects.length > 0 && canManage && (
               <button
                 onClick={() => setIsModalNewProjectOpen(true)}
                 className="flex items-center gap-1.5 rounded bg-amber-400 px-3 py-1.5 text-sm font-medium text-zinc-950 hover:bg-amber-300"
@@ -125,15 +129,17 @@ const HomePage = () => {
           {projects.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-gray-200 py-16 dark:border-stroke-dark">
               <p className="text-gray-400 dark:text-gray-500">
-                No projects yet. Create your first project to get started.
+                No projects yet.{canManage ? " Create your first project to get started." : " Ask an admin or manager to create a project."}
               </p>
-              <button
-                onClick={() => setIsModalNewProjectOpen(true)}
-                className="flex items-center gap-2 rounded bg-amber-400 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-amber-300"
-              >
-                <PlusSquare className="h-4 w-4" />
-                Create First Project
-              </button>
+              {canManage && (
+                <button
+                  onClick={() => setIsModalNewProjectOpen(true)}
+                  className="flex items-center gap-2 rounded bg-amber-400 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-amber-300"
+                >
+                  <PlusSquare className="h-4 w-4" />
+                  Create First Project
+                </button>
+              )}
             </div>
           ) : (
             <div style={{ height: 400, width: "100%" }}>

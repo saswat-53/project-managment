@@ -105,7 +105,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
           <option value="">Unassigned</option>
           {members?.map((member) => (
             <option key={member._id} value={member._id}>
-              {member.name} ({member.role})
+              {member.name} ({member.workspaceRole})
             </option>
           ))}
         </select>

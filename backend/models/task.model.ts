@@ -82,7 +82,7 @@ taskSchema.index({ workspace: 1 });
 taskSchema.pre("deleteOne", { document: true, query: false }, async function () {
   const { Project } = await import("./project.model");
 
-  console.log(`[Task Hook] Removing task ${this._id} from project`);
+  // console.log(`[Task Hook] Removing task ${this._id} from project`);
 
   await Project.updateOne({ _id: this.project }, { $pull: { tasks: this._id } });
 });
@@ -104,7 +104,7 @@ taskSchema.pre("deleteOne", { document: false, query: true }, async function () 
     return;
   }
 
-  console.log(`[Task Hook Query] Removing task ${task._id} from project`);
+  // console.log(`[Task Hook Query] Removing task ${task._id} from project`);
 
   await Project.updateOne({ _id: task.project }, { $pull: { tasks: task._id } });
 });
@@ -120,7 +120,7 @@ taskSchema.pre("deleteMany", async function () {
 
   const filter = this.getFilter();
   const tasks = await Task.find(filter as any);
-  console.log(`[Task Hook] Bulk deleting ${tasks.length} tasks`);
+  // console.log(`[Task Hook] Bulk deleting ${tasks.length} tasks`);
 
   // Project cleanup handled by caller to avoid N queries
 });

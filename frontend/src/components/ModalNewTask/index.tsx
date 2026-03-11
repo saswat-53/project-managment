@@ -1,5 +1,5 @@
 import Modal from "@/components/Modal";
-import { useCreateTaskMutation, useGetProjectByIdQuery } from "@/state/api";
+import { useCreateTaskMutation, useGetWorkspaceMembersQuery } from "@/state/api";
 import { useAppSelector } from "@/app/redux";
 import React, { useState } from "react";
 
@@ -15,8 +15,9 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
     (state) => state.global.activeWorkspaceId,
   );
 
-  const { data: project } = useGetProjectByIdQuery(id ?? "", { skip: !id });
-  const members = project?.members ?? [];
+  const { data: members } = useGetWorkspaceMembersQuery(activeWorkspaceId ?? "", {
+    skip: !activeWorkspaceId,
+  });
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -107,7 +108,7 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
           <option value="">Assign to... (optional)</option>
           {members?.map((member) => (
             <option key={member._id} value={member._id}>
-              {member.name} ({member.role})
+              {member.name} ({member.workspaceRole})
             </option>
           ))}
         </select>
