@@ -26,7 +26,7 @@ const BoardView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Boar
   const [updateTaskStatus] = useUpdateTaskStatusMutation();
 
   const moveTask = (taskId: string, toStatus: string) => {
-    updateTaskStatus({ taskId, status: toStatus });
+    updateTaskStatus({ taskId, status: toStatus, projectId: id });
   };
 
   return (

@@ -9,6 +9,7 @@ import {
   projectIdParamSchema,
 } from "../validators/task.validator";
 import { getUserWorkspaceRole } from "../utils/workspaceRole";
+import { getIO } from "../socket";
 
 /**
  * Recomputes and persists the project status based on its current tasks.
@@ -139,9 +140,14 @@ export const createTask = async (req: Request, res: Response) => {
 
     await recomputeProjectStatus(project._id);
 
+    const populatedTask = await Task.findById(task._id)
+      .populate("assignedTo", "name email avatarUrl")
+      .populate("createdBy", "name email avatarUrl");
+    getIO().to(`project:${project._id.toString()}`).emit("task:created", { task: populatedTask });
+
     return res.status(201).json({
       message: "Task created successfully",
-      task,
+      task: populatedTask,
     });
   } catch (error) {
     console.error("Create task error:", error);
@@ -331,9 +337,14 @@ export const updateTask = async (req: Request, res: Response) => {
 
     await recomputeProjectStatus(project._id);
 
+    const populatedTask = await Task.findById(task._id)
+      .populate("assignedTo", "name email avatarUrl")
+      .populate("createdBy", "name email avatarUrl");
+    getIO().to(`project:${project._id.toString()}`).emit("task:updated", { task: populatedTask });
+
     return res.status(200).json({
       message: "Task updated successfully",
-      task,
+      task: populatedTask,
     });
   } catch (error) {
     console.error("Update task error:", error);
@@ -395,6 +406,7 @@ export const deleteTask = async (req: Request, res: Response) => {
     await task.deleteOne();
 
     await recomputeProjectStatus(projectId);
+    getIO().to(`project:${projectId.toString()}`).emit("task:deleted", { taskId });
 
     return res.status(200).json({ message: "Task deleted successfully" });
   } catch (error) {

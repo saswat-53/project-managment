@@ -11,6 +11,7 @@ import ModalAddMember from "@/components/ModalAddMember";
 import DashboardWrapper from "@/app/dashboardWrapper";
 import { useGetTasksQuery, useGetCurrentUserQuery, useGetWorkspaceMembersQuery } from "@/state/api";
 import { useAppSelector } from "@/app/redux";
+import { useProjectSocket } from "@/hooks/useProjectSocket";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -18,6 +19,7 @@ type Props = {
 
 const Project = ({ params }: Props) => {
   const { id } = React.use(params);
+  useProjectSocket(id);
   const [activeTab, setActiveTab] = useState("Board");
   const [isModalNewTaskOpen, setIsModalNewTaskOpen] = useState(false);
   const [isModalAddMemberOpen, setIsModalAddMemberOpen] = useState(false);

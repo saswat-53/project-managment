@@ -216,13 +216,26 @@ export const api = createApi({
     }),
     updateTaskStatus: build.mutation<
       { message: string; task: Task },
-      { taskId: string; status: string }
+      { taskId: string; status: string; projectId: string }
     >({
       query: ({ taskId, status }) => ({
         url: `task/${taskId}`,
         method: "PUT",
         body: { status },
       }),
+      async onQueryStarted({ taskId, status, projectId }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          api.util.updateQueryData("getTasks", { projectId }, (draft) => {
+            const task = draft.find((t) => t._id === taskId);
+            if (task) task.status = status as Task["status"];
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
       invalidatesTags: (_result, _error, { taskId }) => [
         { type: "Tasks", id: taskId },
         "Projects",
