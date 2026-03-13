@@ -191,7 +191,7 @@ const Task = ({ task, canManage, currentUserId }: TaskProps) => {
             <div className="flex -space-x-[6px] overflow-hidden">
               {task.assignedTo?.avatarUrl && (
                 <Image
-                  key={task.assignedTo._id}
+                  key={`assignee-${task.assignedTo._id}`}
                   src={task.assignedTo.avatarUrl}
                   alt={task.assignedTo.name}
                   width={30}
@@ -202,7 +202,7 @@ const Task = ({ task, canManage, currentUserId }: TaskProps) => {
               )}
               {task.createdBy?.avatarUrl && (
                 <Image
-                  key={task.createdBy._id}
+                  key={`creator-${task.createdBy._id}`}
                   src={task.createdBy.avatarUrl}
                   alt={task.createdBy.name}
                   width={30}

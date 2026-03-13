@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { MongoServerSelectionError } from "mongodb";
 import { User } from "../models/user.model";
 
 export const verifyJWT = async (req: Request, res: Response, next: NextFunction) => {
@@ -25,6 +26,10 @@ export const verifyJWT = async (req: Request, res: Response, next: NextFunction)
     (req as any).user = user;
     next();
   } catch (error) {
+    if (error instanceof MongoServerSelectionError) {
+      console.error("DB unavailable during auth:", error.message);
+      return res.status(503).json({ message: "Service temporarily unavailable" });
+    }
     console.error("JWT Error:", error);
     return res.status(401).json({ message: "Invalid or expired token" });
   }
