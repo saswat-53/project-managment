@@ -37,7 +37,7 @@ app.use("/api/auth", userRoutes);
 app.use("/api/workspace", workspaceRoutes);
 app.use("/api/project", projectRoutes);
 app.use("/api/task", taskRoutes);
-app.use("/api/health", healthRoutes);
+app.use("/health", healthRoutes);
 
 // Swagger UI Route
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -47,7 +47,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 
 // Root info
 app.get("/", (_req, res) => {
-  res.json({ message: "Backend Running... | API Docs available at /api-docs | Health check at /api/health" });
+  res.json({ message: "Backend Running... | API Docs available at /api-docs | Health check at /health" });
 });
 
 const startServer = async () => {

@@ -36,10 +36,6 @@ const options: swaggerJsdoc.Options = {
         Error: {
           type: "object",
           properties: {
-            success: {
-              type: "boolean",
-              example: false,
-            },
             message: {
               type: "string",
               example: "Error message",
@@ -53,23 +49,46 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               example: "60d0fe4f5311236168a109ca",
             },
-            username: {
+            name: {
               type: "string",
-              example: "johndoe",
+              example: "John Doe",
             },
             email: {
               type: "string",
               example: "john@example.com",
             },
-            fullName: {
+            avatarUrl: {
               type: "string",
-              example: "John Doe",
+              example: "https://example.com/avatar.jpg",
+            },
+            role: {
+              type: "string",
+              example: "user",
+            },
+            position: {
+              type: "string",
+              example: "Software Engineer",
             },
             isEmailVerified: {
               type: "boolean",
               example: true,
             },
           },
+        },
+        WorkspaceMember: {
+          allOf: [
+            { $ref: "#/components/schemas/User" },
+            {
+              type: "object",
+              properties: {
+                workspaceRole: {
+                  type: "string",
+                  enum: ["admin", "manager", "member"],
+                  example: "member",
+                },
+              },
+            },
+          ],
         },
         Workspace: {
           type: "object",
@@ -93,19 +112,20 @@ const options: swaggerJsdoc.Options = {
             members: {
               type: "array",
               items: {
-                type: "object",
-                properties: {
-                  user: {
-                    type: "string",
-                    example: "60d0fe4f5311236168a109ca",
-                  },
-                  role: {
-                    type: "string",
-                    enum: ["admin", "member"],
-                    example: "member",
-                  },
-                },
+                type: "string",
+                example: "60d0fe4f5311236168a109ca",
               },
+              description: "Array of user ObjectIds",
+            },
+            inviteCode: {
+              type: "string",
+              example: "abc123xyz",
+            },
+            myRole: {
+              type: "string",
+              enum: ["admin", "manager", "member"],
+              example: "admin",
+              description: "The calling user's role in this workspace (present in list responses)",
             },
             createdAt: {
               type: "string",
@@ -139,24 +159,15 @@ const options: swaggerJsdoc.Options = {
             members: {
               type: "array",
               items: {
-                type: "object",
-                properties: {
-                  user: {
-                    type: "string",
-                    example: "60d0fe4f5311236168a109ca",
-                  },
-                  role: {
-                    type: "string",
-                    enum: ["admin", "member"],
-                    example: "member",
-                  },
-                },
+                type: "string",
+                example: "60d0fe4f5311236168a109ca",
               },
+              description: "Array of user ObjectIds",
             },
             status: {
               type: "string",
-              enum: ["active", "archived", "completed"],
-              example: "active",
+              enum: ["backlog", "in-progress", "completed"],
+              example: "backlog",
             },
             startDate: {
               type: "string",
@@ -195,16 +206,23 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               example: "60d0fe4f5311236168a109ca",
             },
+            workspace: {
+              type: "string",
+              example: "60d0fe4f5311236168a109ca",
+            },
+            createdBy: {
+              type: "string",
+              example: "60d0fe4f5311236168a109ca",
+            },
             assignedTo: {
-              type: "array",
-              items: {
-                type: "string",
-                example: "60d0fe4f5311236168a109ca",
-              },
+              type: "string",
+              example: "60d0fe4f5311236168a109ca",
+              description: "Single user ObjectId (or null if unassigned)",
+              nullable: true,
             },
             status: {
               type: "string",
-              enum: ["todo", "in_progress", "in_review", "completed"],
+              enum: ["todo", "in-progress", "done"],
               example: "todo",
             },
             priority: {

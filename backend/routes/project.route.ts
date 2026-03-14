@@ -46,19 +46,13 @@ const router = Router();
  *               members:
  *                 type: array
  *                 items:
- *                   type: object
- *                   properties:
- *                     user:
- *                       type: string
- *                       example: 60d0fe4f5311236168a109ca
- *                     role:
- *                       type: string
- *                       enum: [admin, member]
- *                       example: member
+ *                   type: string
+ *                   example: 60d0fe4f5311236168a109ca
+ *                 description: Array of user ObjectIds
  *               status:
  *                 type: string
- *                 enum: [active, archived, completed]
- *                 example: active
+ *                 enum: [backlog, in-progress, completed]
+ *                 example: backlog
  *               startDate:
  *                 type: string
  *                 format: date-time
@@ -196,19 +190,13 @@ router.get("/:projectId", verifyJWT, getProjectById);
  *               members:
  *                 type: array
  *                 items:
- *                   type: object
- *                   properties:
- *                     user:
- *                       type: string
- *                       example: 60d0fe4f5311236168a109ca
- *                     role:
- *                       type: string
- *                       enum: [admin, member]
- *                       example: member
+ *                   type: string
+ *                   example: 60d0fe4f5311236168a109ca
+ *                 description: Array of user ObjectIds
  *               status:
  *                 type: string
- *                 enum: [active, archived, completed]
- *                 example: active
+ *                 enum: [backlog, in-progress, completed]
+ *                 example: backlog
  *               startDate:
  *                 type: string
  *                 format: date-time
@@ -241,6 +229,47 @@ router.get("/:projectId", verifyJWT, getProjectById);
  *         description: Project not found
  */
 router.put("/:projectId", verifyJWT, updateProject);
+
+/**
+ * @swagger
+ * /api/project/{projectId}/members/{memberId}:
+ *   delete:
+ *     summary: Remove a member from a project
+ *     description: Requires workspace admin or manager role.
+ *     tags: [Project]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: 60d0fe4f5311236168a109ca
+ *       - in: path
+ *         name: memberId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: 60d0fe4f5311236168a109cb
+ *     responses:
+ *       200:
+ *         description: Member removed from project successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Member removed from project successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Project not found or user is not a project member
+ */
 router.delete("/:projectId/members/:memberId", verifyJWT, removeProjectMember);
 
 /**
