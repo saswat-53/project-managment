@@ -14,7 +14,11 @@ import {
 } from "../validators/workspace.validator";
 import mongoose from "mongoose";
 import { getUserWorkspaceRole } from "../utils/workspaceRole";
-import { sendWorkspaceInviteEmail } from "../utils/email.service";
+import {
+  sendWorkspaceInviteEmail,
+  sendRoleChangedEmail,
+  sendRemovedFromWorkspaceEmail,
+} from "../utils/email.service";
 
 /**
  * Create Workspace
@@ -141,7 +145,7 @@ export const getMyWorkspaces = async (req: Request, res: Response) => {
       const wsObj = ws.toObject();
       const ownerId = typeof wsObj.owner === "object" && wsObj.owner !== null
         ? (wsObj.owner as any)._id?.toString()
-        : wsObj.owner?.toString();
+        : (wsObj.owner as any)?.toString();
       const myRole = roleMap.get(ws._id.toString())
         ?? (ownerId === userIdStr ? "admin" : "member");
       return { ...wsObj, myRole };
@@ -406,7 +410,9 @@ export const inviteToWorkspace = async (req: Request, res: Response) => {
 
     const inviteUrl = `${process.env.FRONTEND_URL}/workspace/join/${rawToken}`;
 
-    await sendWorkspaceInviteEmail(email.toLowerCase(), workspace.name, inviteUrl);
+    sendWorkspaceInviteEmail(email.toLowerCase(), workspace.name, inviteUrl).catch((err) =>
+      console.error("Failed to send workspace invite email:", err)
+    );
 
     return res.status(200).json({
       message: "Invite sent successfully",
@@ -558,6 +564,15 @@ export const removeWorkspaceMember = async (req: Request, res: Response) => {
     // Clean up WorkspaceMember record
     await WorkspaceMember.deleteOne({ user: memberId, workspace: workspaceId });
 
+    // Notify the removed member (fire-and-forget)
+    User.findById(memberId).select("email").then((removedUser) => {
+      if (removedUser) {
+        sendRemovedFromWorkspaceEmail(removedUser.email, workspace.name).catch((err) =>
+          console.error("Failed to send workspace removal email:", err)
+        );
+      }
+    }).catch(() => {});
+
     return res.status(200).json({ message: "Member removed successfully" });
   } catch (error) {
     console.error("Remove workspace member error:", error);
@@ -656,6 +671,15 @@ export const updateMemberRole = async (req: Request, res: Response) => {
       { role },
       { upsert: true, new: true }
     );
+
+    // Notify the affected member of their new role (fire-and-forget)
+    User.findById(targetUserId).select("email").then((targetUser) => {
+      if (targetUser) {
+        sendRoleChangedEmail(targetUser.email, role, workspace.name).catch((err) =>
+          console.error("Failed to send role changed email:", err)
+        );
+      }
+    }).catch(() => {});
 
     return res.status(200).json({ message: "Member role updated successfully" });
   } catch (error) {

@@ -9,7 +9,11 @@ import {
   workspaceIdParamSchema,
 } from "../validators/project.validator";
 import { getUserWorkspaceRole } from "../utils/workspaceRole";
-import { sendProjectAddedEmail } from "../utils/email.service";
+import {
+  sendProjectAddedEmail,
+  sendRemovedFromProjectEmail,
+  sendProjectDeletedEmail,
+} from "../utils/email.service";
 import { User } from "../models/user.model";
 
 /**
@@ -447,6 +451,15 @@ export const removeProjectMember = async (req: Request, res: Response) => {
     project.workspace = workspace._id;
     await project.save();
 
+    // Notify the removed member (fire-and-forget)
+    User.findById(memberId).select("email").then((removedUser) => {
+      if (removedUser) {
+        sendRemovedFromProjectEmail(removedUser.email, project.name, workspace.name).catch((err) =>
+          console.error("Failed to send project removal email:", err)
+        );
+      }
+    }).catch(() => {});
+
     return res.status(200).json({ message: "Member removed from project successfully" });
   } catch (error) {
     console.error("Remove project member error:", error);
@@ -488,6 +501,22 @@ export const deleteProject = async (req: Request, res: Response) => {
     const workspaceRole = await getUserWorkspaceRole(userId.toString(), workspace._id.toString());
     if (workspaceRole !== "admin" && workspaceRole !== "manager") {
       return res.status(403).json({ message: "Only admins and managers can delete projects" });
+    }
+
+    // Notify all project members except the requester before deletion (fire-and-forget)
+    const userIdStr = userId.toString();
+    const otherMemberIds = project.members
+      .map((id) => id.toString())
+      .filter((id) => id !== userIdStr);
+
+    if (otherMemberIds.length > 0) {
+      User.find({ _id: { $in: otherMemberIds } }).select("email").then((members) => {
+        members.forEach((m) => {
+          sendProjectDeletedEmail(m.email, project.name, workspace.name).catch((err) =>
+            console.error("Failed to send project deleted email:", err)
+          );
+        });
+      }).catch(() => {});
     }
 
     // Cascade delete and workspace cleanup handled by Project pre-delete hook

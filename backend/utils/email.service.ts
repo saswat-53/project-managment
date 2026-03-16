@@ -180,6 +180,118 @@ export const sendProjectAddedEmail = async (
 };
 
 /**
+ * Sends a "your workspace role has been changed" notification email.
+ */
+export const sendRoleChangedEmail = async (
+  to: string,
+  newRole: string,
+  workspaceName: string
+) => {
+  const roleLabel = newRole.charAt(0).toUpperCase() + newRole.slice(1);
+  const dashboardUrl = process.env.FRONTEND_URL!;
+
+  const content = `
+    ${heading("Your workspace role has been updated")}
+    ${bodyText(`Your role in the <strong style="color:#111827;">${workspaceName}</strong> workspace has been changed to <strong style="color:#111827;">${roleLabel}</strong>.`)}
+    <div style="margin:28px 0;">
+      ${ctaButton("Go to Dashboard", dashboardUrl)}
+    </div>
+    ${divider}
+    <p style="margin:0;font-size:13px;color:${C.textMuted};">If you believe this was a mistake, please contact your workspace admin.</p>
+  `;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Your role in "${workspaceName}" has been updated — ${APP_NAME}`,
+    html: emailWrapper(content),
+  });
+};
+
+/**
+ * Sends a "you've been removed from a workspace" notification email.
+ */
+export const sendRemovedFromWorkspaceEmail = async (
+  to: string,
+  workspaceName: string
+) => {
+  const dashboardUrl = process.env.FRONTEND_URL!;
+
+  const content = `
+    ${heading("You've been removed from a workspace")}
+    ${bodyText(`You have been removed from the <strong style="color:#111827;">${workspaceName}</strong> workspace on ProjectFlow. You no longer have access to its projects or tasks.`)}
+    <div style="margin:28px 0;">
+      ${ctaButton("Go to Dashboard", dashboardUrl)}
+    </div>
+    ${divider}
+    <p style="margin:0;font-size:13px;color:${C.textMuted};">If you believe this was a mistake, please contact the workspace admin.</p>
+  `;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `You've been removed from "${workspaceName}" — ${APP_NAME}`,
+    html: emailWrapper(content),
+  });
+};
+
+/**
+ * Sends a "you've been removed from a project" notification email.
+ */
+export const sendRemovedFromProjectEmail = async (
+  to: string,
+  projectName: string,
+  workspaceName: string
+) => {
+  const dashboardUrl = process.env.FRONTEND_URL!;
+
+  const content = `
+    ${heading("You've been removed from a project")}
+    ${bodyText(`You have been removed from the <strong style="color:#111827;">${projectName}</strong> project in the <strong style="color:#111827;">${workspaceName}</strong> workspace. You no longer have access to its tasks.`)}
+    <div style="margin:28px 0;">
+      ${ctaButton("Go to Dashboard", dashboardUrl)}
+    </div>
+    ${divider}
+    <p style="margin:0;font-size:13px;color:${C.textMuted};">If you believe this was a mistake, please contact your workspace admin.</p>
+  `;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `You've been removed from "${projectName}" — ${APP_NAME}`,
+    html: emailWrapper(content),
+  });
+};
+
+/**
+ * Sends a "project has been deleted" notification email to all project members.
+ */
+export const sendProjectDeletedEmail = async (
+  to: string,
+  projectName: string,
+  workspaceName: string
+) => {
+  const dashboardUrl = process.env.FRONTEND_URL!;
+
+  const content = `
+    ${heading("A project has been deleted")}
+    ${bodyText(`The project <strong style="color:#111827;">${projectName}</strong> in the <strong style="color:#111827;">${workspaceName}</strong> workspace has been permanently deleted along with all its tasks.`)}
+    <div style="margin:28px 0;">
+      ${ctaButton("Go to Dashboard", dashboardUrl)}
+    </div>
+    ${divider}
+    <p style="margin:0;font-size:13px;color:${C.textMuted};">If you believe this was a mistake, please contact your workspace admin.</p>
+  `;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Project "${projectName}" has been deleted — ${APP_NAME}`,
+    html: emailWrapper(content),
+  });
+};
+
+/**
  * Sends a workspace invite email.
  */
 export const sendWorkspaceInviteEmail = async (
