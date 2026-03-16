@@ -24,6 +24,10 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import crypto from "crypto";
 import { generateAccessAndRefreshTokens } from "../utils/generateTokens";
 import {
+  sendPasswordResetEmail,
+  sendVerificationEmail as sendVerificationEmailUtil,
+} from "../utils/email.service";
+import {
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
@@ -346,9 +350,12 @@ export const sendVerificationEmail = async (req: AuthenticatedRequest, res: Resp
 
     const verifyUrl = `${process.env.FRONTEND_URL}/verify-email/${unHashedToken}`;
 
+    await sendVerificationEmailUtil(user.email, verifyUrl);
+
     return res.status(200).json({
-      message: "Verification email generated",
-      verifyUrl,
+      message: "Verification email sent",
+      // DEV ONLY: returned for manual testing — removed in production
+      ...(process.env.NODE_ENV !== "production" && { verifyUrl }),
     });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -452,9 +459,12 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${unHashedToken}`;
 
+    await sendPasswordResetEmail(user.email, resetUrl);
+
     return res.status(200).json({
-      message: "Password reset link generated",
-      resetUrl,
+      message: "If account exists, password reset sent.",
+      // DEV ONLY: returned for manual testing — removed in production
+      ...(process.env.NODE_ENV !== "production" && { resetUrl }),
     });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -566,6 +576,71 @@ export const changePassword = async (req: AuthenticatedRequest, res: Response) =
 
     return res.status(200).json({ message: "Password updated successfully" });
   } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+/**
+ * Update User Detail
+ *
+ * Allows the authenticated user to update their name, email, avatarUrl, and position.
+ *
+ * @route PATCH /api/auth/update-user-detail
+ * @access Private (requires authentication)
+ */
+export const updateUserDetail = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user?._id;
+    const { name, email, avatarUrl, position } = req.body;
+
+    if (email) {
+      const currentUser = await User.findById(userId).select("email");
+      if (currentUser?.email === email) {
+        return res.status(400).json({ message: "That is already your current email" });
+      }
+      const existing = await User.findOne({ email, _id: { $ne: userId } });
+      if (existing) return res.status(400).json({ message: "Email already in use" });
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (name !== undefined) updateData.name = name;
+    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
+    if (position !== undefined) updateData.position = position;
+
+    let emailChanged = false;
+    if (email !== undefined) {
+      updateData.email = email;
+      updateData.isEmailVerified = false;
+      emailChanged = true;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true }
+    ).select("-password -refreshToken -forgotPasswordToken -forgotPasswordExpiry");
+
+    if (emailChanged && user) {
+      const fullUser = await User.findById(userId);
+      if (fullUser) {
+        const { unHashedToken, hashedToken, tokenExpiry } = fullUser.generateTemporaryToken();
+        fullUser.emailVerificationToken = hashedToken;
+        fullUser.emailVerificationExpiry = new Date(tokenExpiry);
+        await fullUser.save({ validateBeforeSave: false });
+
+        const verifyUrl = `${process.env.FRONTEND_URL}/verify-email/${unHashedToken}`;
+        await sendVerificationEmailUtil(email, verifyUrl);
+      }
+    }
+
+    return res.status(200).json({
+      message: emailChanged
+        ? "Profile updated. A verification email has been sent to your new address."
+        : "Profile updated successfully",
+      user,
+    });
+  } catch (error) {
+    console.error("Update user detail error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

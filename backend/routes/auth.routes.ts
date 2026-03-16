@@ -11,6 +11,7 @@ import {
   verifyEmail,
   changePassword,
   resendVerificationEmail,
+  updateUserDetail,
 } from "../controllers/auth.controller";
 
 import { verifyJWT } from "../middlewares/auth";
@@ -389,5 +390,7 @@ router.post("/resend-verification-email", verifyJWT, resendVerificationEmail);
  *         description: Unauthorized
  */
 router.post("/change-password", verifyJWT, changePassword);
+
+router.patch("/update-user-detail", verifyJWT, updateUserDetail);
 
 export default router;

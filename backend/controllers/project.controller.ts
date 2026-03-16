@@ -9,6 +9,8 @@ import {
   workspaceIdParamSchema,
 } from "../validators/project.validator";
 import { getUserWorkspaceRole } from "../utils/workspaceRole";
+import { sendProjectAddedEmail } from "../utils/email.service";
+import { User } from "../models/user.model";
 
 /**
  * Create Project
@@ -107,6 +109,18 @@ export const createProject = async (req: Request, res: Response) => {
 
     workspace.projects.push(project._id);
     await workspace.save();
+
+    // Notify members added at creation time (exclude the creator)
+    const addedMemberIds = validMembers.filter((id) => id !== userId.toString());
+    if (addedMemberIds.length > 0) {
+      const addedUsers = await User.find({ _id: { $in: addedMemberIds } }).select("email");
+      const projectUrl = `${process.env.FRONTEND_URL}/projects/${project._id}`;
+      addedUsers.forEach((u) => {
+        sendProjectAddedEmail(u.email, name, workspace.name, projectUrl).catch(
+          (err) => console.error("Project added email failed:", err)
+        );
+      });
+    }
 
     return res.status(201).json({
       message: "Project created successfully",
@@ -349,6 +363,11 @@ export const updateProject = async (req: Request, res: Response) => {
       // Get existing members
       const existingMemberIds = project.members.map((id) => id.toString());
 
+      // Track truly new members (not already in the project) for email notification
+      const trulyNewMemberIds = members.filter(
+        (id: string) => !existingMemberIds.includes(id)
+      );
+
       // Add new members to existing ones (additive, no duplicates using Set)
       const combinedMemberSet = new Set<string>([...existingMemberIds, ...members]);
       const newMemberIds = Array.from(combinedMemberSet);
@@ -356,6 +375,17 @@ export const updateProject = async (req: Request, res: Response) => {
       project.members = newMemberIds.map(
         (id) => new mongoose.Types.ObjectId(id)
       );
+
+      // Send email to newly added members (fire-and-forget, don't block response)
+      if (trulyNewMemberIds.length > 0) {
+        const newUsers = await User.find({ _id: { $in: trulyNewMemberIds } }).select("email");
+        const projectUrl = `${process.env.FRONTEND_URL}/projects/${project._id}`;
+        newUsers.forEach((u) => {
+          sendProjectAddedEmail(u.email, project.name, workspace.name, projectUrl).catch(
+            (err) => console.error("Project added email failed:", err)
+          );
+        });
+      }
     }
 
     // Restore workspace to ObjectId before saving (it was populated as full object)

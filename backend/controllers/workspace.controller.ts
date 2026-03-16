@@ -14,6 +14,7 @@ import {
 } from "../validators/workspace.validator";
 import mongoose from "mongoose";
 import { getUserWorkspaceRole } from "../utils/workspaceRole";
+import { sendWorkspaceInviteEmail } from "../utils/email.service";
 
 /**
  * Create Workspace
@@ -405,10 +406,13 @@ export const inviteToWorkspace = async (req: Request, res: Response) => {
 
     const inviteUrl = `${process.env.FRONTEND_URL}/workspace/join/${rawToken}`;
 
+    await sendWorkspaceInviteEmail(email.toLowerCase(), workspace.name, inviteUrl);
+
     return res.status(200).json({
-      message: "Invite created successfully",
-      inviteUrl,
+      message: "Invite sent successfully",
       recipientExists: !!existingUser,
+      // DEV ONLY: returned for manual testing — removed in production
+      ...(process.env.NODE_ENV !== "production" && { inviteUrl }),
     });
   } catch (error) {
     console.error("Invite to workspace error:", error);

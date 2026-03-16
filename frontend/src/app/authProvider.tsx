@@ -1,16 +1,21 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useGetCurrentUserQuery } from "@/state/api";
 import { useAppSelector } from "./redux";
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const activeWorkspaceId = useAppSelector(
     (state) => state.global.activeWorkspaceId,
   );
   const { data: currentUser, isLoading, isError } = useGetCurrentUserQuery();
+
+  // Settings is allowed even with an unverified email so users can correct a
+  // wrong address they just saved.
+  const isSettingsPage = pathname === "/settings";
 
   useEffect(() => {
     if (isLoading) return;
@@ -20,15 +25,15 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    if (!currentUser.isEmailVerified) {
+    if (!currentUser.isEmailVerified && !isSettingsPage) {
       router.push("/verify-email");
       return;
     }
 
-    if (!activeWorkspaceId) {
+    if (!activeWorkspaceId && !isSettingsPage) {
       router.push("/workspaces");
     }
-  }, [isLoading, isError, currentUser, activeWorkspaceId, router]);
+  }, [isLoading, isError, currentUser, activeWorkspaceId, router, isSettingsPage]);
 
   if (isLoading) {
     return (
@@ -38,7 +43,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (isError || !currentUser || !currentUser.isEmailVerified || !activeWorkspaceId) return null;
+  if (isError || !currentUser || (!currentUser.isEmailVerified && !isSettingsPage) || (!activeWorkspaceId && !isSettingsPage)) return null;
 
   return <>{children}</>;
 };

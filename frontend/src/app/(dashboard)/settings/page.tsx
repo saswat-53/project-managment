@@ -1,8 +1,8 @@
 "use client";
 
 import Header from "@/components/Header";
-import { useGetCurrentUserQuery, useChangePasswordMutation, useSendVerificationEmailMutation } from "@/state/api";
-import { CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
+import { useGetCurrentUserQuery, useChangePasswordMutation, useSendVerificationEmailMutation, useUpdateUserDetailMutation } from "@/state/api";
+import { CheckCircle, XCircle, Eye, EyeOff, Pencil, Check, X } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
@@ -10,6 +10,35 @@ const Settings = () => {
   const { data: user, isLoading } = useGetCurrentUserQuery();
   const [changePassword, { isLoading: isChanging }] = useChangePasswordMutation();
   const [sendVerificationEmail, { isLoading: isSending }] = useSendVerificationEmailMutation();
+  const [updateUserDetail, { isLoading: isUpdating }] = useUpdateUserDetailMutation();
+
+  const [editingField, setEditingField] = useState<"name" | "email" | "avatarUrl" | "position" | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [originalValue, setOriginalValue] = useState("");
+  const [profileFeedback, setProfileFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const startEdit = (field: "name" | "email" | "avatarUrl" | "position") => {
+    if (!user) return;
+    const current = field === "name" ? user.name : field === "email" ? user.email : field === "avatarUrl" ? (user.avatarUrl ?? "") : (user.position ?? "");
+    setEditingField(field);
+    setEditValue(current);
+    setOriginalValue(current);
+    setProfileFeedback(null);
+  };
+
+  const cancelEdit = () => { setEditingField(null); setEditValue(""); setOriginalValue(""); };
+
+  const handleProfileSave = async () => {
+    if (!editingField) return;
+    if (editValue === originalValue) { cancelEdit(); return; }
+    try {
+      await updateUserDetail({ [editingField]: editValue }).unwrap();
+      setProfileFeedback({ type: "success", message: "Updated successfully." });
+      setEditingField(null);
+    } catch (err: any) {
+      setProfileFeedback({ type: "error", message: err?.data?.message ?? "Failed to update." });
+    }
+  };
 
   const [form, setForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
   const [showPasswords, setShowPasswords] = useState({ old: false, new: false, confirm: false });
@@ -62,7 +91,14 @@ const Settings = () => {
     <div className="p-8">
       <Header name="Settings" />
 
-      <div className="mt-6 max-w-xl space-y-6">
+      <div className="mt-6 max-w-xl space-y-4">
+        {/* Unverified email warning */}
+        {!user.isEmailVerified && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-300">
+            Your email is not verified. Update the email field below if you made a mistake, then check your inbox for the verification link.
+          </div>
+        )}
+
         {/* Avatar */}
         <div className="flex items-center gap-4">
           {user.avatarUrl ? (
@@ -85,25 +121,24 @@ const Settings = () => {
           </div>
         </div>
 
+        {/* Profile feedback */}
+        {profileFeedback && (
+          <div className={`rounded-md px-4 py-3 text-sm ${profileFeedback.type === "success" ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400" : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"}`}>
+            {profileFeedback.message}
+          </div>
+        )}
+
         {/* Name */}
-        <div>
-          <label className={labelStyles}>Name</label>
-          <div className={valueStyles}>{user.name}</div>
-        </div>
+        <EditableField label="Name" field="name" value={user.name} editingField={editingField} editValue={editValue} isUpdating={isUpdating} onEdit={startEdit} onSave={handleProfileSave} onCancel={cancelEdit} onChange={setEditValue} labelStyles={labelStyles} valueStyles={valueStyles} inputStyles={inputStyles} />
 
         {/* Email */}
-        <div>
-          <label className={labelStyles}>Email</label>
-          <div className={valueStyles}>{user.email}</div>
-        </div>
+        <EditableField label="Email" field="email" value={user.email} editingField={editingField} editValue={editValue} isUpdating={isUpdating} onEdit={startEdit} onSave={handleProfileSave} onCancel={cancelEdit} onChange={setEditValue} labelStyles={labelStyles} valueStyles={valueStyles} inputStyles={inputStyles} />
+
+        {/* Position */}
+        <EditableField label="Position" field="position" value={user.position ?? ""} editingField={editingField} editValue={editValue} isUpdating={isUpdating} onEdit={startEdit} onSave={handleProfileSave} onCancel={cancelEdit} onChange={setEditValue} labelStyles={labelStyles} valueStyles={valueStyles} inputStyles={inputStyles} placeholder="e.g. Frontend Developer" />
 
         {/* Avatar URL */}
-        <div>
-          <label className={labelStyles}>Avatar URL</label>
-          <div className={`${valueStyles} truncate`}>
-            {user.avatarUrl || <span className="text-gray-400 dark:text-gray-600">Not set</span>}
-          </div>
-        </div>
+        <EditableField label="Avatar URL" field="avatarUrl" value={user.avatarUrl ?? ""} editingField={editingField} editValue={editValue} isUpdating={isUpdating} onEdit={startEdit} onSave={handleProfileSave} onCancel={cancelEdit} onChange={setEditValue} labelStyles={labelStyles} valueStyles={valueStyles} inputStyles={inputStyles} placeholder="https://..." />
 
         {/* Email Verified */}
         <div>
@@ -123,7 +158,7 @@ const Settings = () => {
                   disabled={isSending}
                   className="ml-1 rounded border border-amber-400 px-3 py-1 text-xs font-medium text-amber-600 transition-all hover:bg-amber-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50 dark:text-amber-400 dark:hover:text-zinc-950"
                 >
-                  {isSending ? "Sending..." : "Send verification email"}
+                  {isSending ? "Sending..." : "Resend verification email"}
                 </button>
               </>
             )}
@@ -233,6 +268,61 @@ const Settings = () => {
           </form>
         </div>
       </div>
+    </div>
+  );
+};
+
+type EditableFieldProps = {
+  label: string;
+  field: "name" | "email" | "avatarUrl" | "position";
+  value: string;
+  editingField: string | null;
+  editValue: string;
+  isUpdating: boolean;
+  onEdit: (field: "name" | "email" | "avatarUrl" | "position") => void;
+  onSave: () => void;
+  onCancel: () => void;
+  onChange: (val: string) => void;
+  labelStyles: string;
+  valueStyles: string;
+  inputStyles: string;
+  placeholder?: string;
+};
+
+const EditableField = ({ label, field, value, editingField, editValue, isUpdating, onEdit, onSave, onCancel, onChange, labelStyles, valueStyles, inputStyles, placeholder }: EditableFieldProps) => {
+  const isEditing = editingField === field;
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <label className={labelStyles}>{label}</label>
+        {!isEditing && (
+          <button onClick={() => onEdit(field)} className="text-gray-400 hover:text-amber-500 transition-colors" title={`Edit ${label}`}>
+            <Pencil size={13} />
+          </button>
+        )}
+      </div>
+      {isEditing ? (
+        <div className="mt-1 flex items-center gap-2">
+          <input
+            autoFocus
+            value={editValue}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel(); }}
+            placeholder={placeholder}
+            className={`${inputStyles} flex-1`}
+          />
+          <button onClick={onSave} disabled={isUpdating} className="rounded-md bg-amber-400 p-2 text-zinc-950 hover:bg-amber-300 disabled:opacity-50" title="Save">
+            <Check size={14} />
+          </button>
+          <button onClick={onCancel} className="rounded-md border border-gray-300 p-2 text-gray-500 hover:text-red-500 dark:border-stroke-dark dark:text-gray-400" title="Cancel">
+            <X size={14} />
+          </button>
+        </div>
+      ) : (
+        <div className={`${valueStyles} truncate`}>
+          {value || <span className="text-gray-400 dark:text-gray-600">Not set</span>}
+        </div>
+      )}
     </div>
   );
 };

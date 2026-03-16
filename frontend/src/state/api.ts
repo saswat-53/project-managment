@@ -262,6 +262,13 @@ export const api = createApi({
         "Projects",
       ],
     }),
+    updateUserDetail: build.mutation<
+      { message: string; user: User },
+      { name?: string; email?: string; avatarUrl?: string; position?: string }
+    >({
+      query: (body) => ({ url: "auth/update-user-detail", method: "PATCH", body }),
+      invalidatesTags: ["CurrentUser"],
+    }),
     changePassword: build.mutation<
       { message: string },
       { oldPassword: string; newPassword: string }
@@ -330,6 +337,7 @@ export const {
   useDeleteProjectMutation,
   useDeleteTaskMutation,
   useDeleteWorkspaceMutation,
+  useUpdateUserDetailMutation,
   useChangePasswordMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
