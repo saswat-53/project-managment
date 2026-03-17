@@ -1,15 +1,14 @@
+import "dotenv/config";
 import express from "express";
 import http from "http";
 import cors from "cors";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { connectDB } from "./config/db";
 import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 import { initIO } from "./socket";
-
-dotenv.config();
+import { scheduleTaskDigest } from "./jobs/taskDigest.job";
 
 const app = express();
 app.use(
@@ -55,6 +54,7 @@ const startServer = async () => {
 
   const httpServer = http.createServer(app);
   initIO(httpServer);
+  // scheduleTaskDigest();
 
   const PORT = process.env.PORT || 5000;
   httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));

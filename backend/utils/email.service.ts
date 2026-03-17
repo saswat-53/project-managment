@@ -291,6 +291,105 @@ export const sendProjectDeletedEmail = async (
   });
 };
 
+// ─── Date formatting helper ───────────────────────────────────────────────────
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// ─── Task row for digest emails ───────────────────────────────────────────────
+function taskRow(title: string, projectName: string, dateLabel: string): string {
+  return `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;">
+        <p style="margin:0;font-size:14px;font-weight:600;color:#111827;">${title}</p>
+        <p style="margin:4px 0 0;font-size:12px;color:${C.textMuted};">${projectName} &middot; ${dateLabel}</p>
+      </td>
+    </tr>
+  `;
+}
+
+/**
+ * Sends a daily task digest email with overdue and due-soon tasks.
+ */
+export const sendTaskDigestEmail = async (
+  to: string,
+  overdue: { title: string; projectName: string; dueDate: Date }[],
+  dueSoon: { title: string; projectName: string; dueDate: Date }[]
+) => {
+  const dashboardUrl = process.env.FRONTEND_URL!;
+
+  const overdueSection = overdue.length > 0 ? `
+    <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:0.05em;">
+      Overdue — ${overdue.length} task${overdue.length > 1 ? "s" : ""}
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      ${overdue.map((t) => taskRow(t.title, t.projectName, `Due ${formatDate(t.dueDate)}`)).join("")}
+    </table>
+  ` : "";
+
+  const dueSoonSection = dueSoon.length > 0 ? `
+    <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:0.05em;">
+      Due in 24 hours — ${dueSoon.length} task${dueSoon.length > 1 ? "s" : ""}
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      ${dueSoon.map((t) => taskRow(t.title, t.projectName, `Due ${formatDate(t.dueDate)}`)).join("")}
+    </table>
+  ` : "";
+
+  const subjectParts: string[] = [];
+  if (overdue.length > 0) subjectParts.push(`${overdue.length} overdue`);
+  if (dueSoon.length > 0) subjectParts.push(`${dueSoon.length} due soon`);
+
+  const content = `
+    ${heading("Your daily task summary")}
+    ${bodyText("Here's a quick look at tasks that need your attention today.")}
+    ${divider}
+    ${overdueSection}
+    ${dueSoonSection}
+    <div style="margin:28px 0;">
+      ${ctaButton("View All Tasks", dashboardUrl)}
+    </div>
+    ${divider}
+    <p style="margin:0;font-size:13px;color:${C.textMuted};">You're receiving this because you have tasks assigned to you on ProjectFlow.</p>
+  `;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Task summary: ${subjectParts.join(", ")} — ${APP_NAME}`,
+    html: emailWrapper(content),
+  });
+};
+
+/**
+ * Sends a "you've been assigned a task" notification email.
+ */
+export const sendTaskAssignedEmail = async (
+  to: string,
+  taskTitle: string,
+  projectName: string,
+  assignerName: string,
+  taskUrl: string
+) => {
+  const content = `
+    ${heading("You've been assigned a task")}
+    ${bodyText(`<strong style="color:#111827;">${assignerName}</strong> assigned you to <strong style="color:#111827;">${taskTitle}</strong> in the <strong style="color:#111827;">${projectName}</strong> project.`)}
+    <div style="margin:28px 0;">
+      ${ctaButton("View Task", taskUrl)}
+    </div>
+    ${fallbackUrl(taskUrl)}
+    ${divider}
+    <p style="margin:0;font-size:13px;color:${C.textMuted};">Log in to ProjectFlow to view the full task details and get started.</p>
+  `;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `You've been assigned "${taskTitle}" — ${APP_NAME}`,
+    html: emailWrapper(content),
+  });
+};
+
 /**
  * Sends a workspace invite email.
  */
