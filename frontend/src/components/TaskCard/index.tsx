@@ -4,7 +4,7 @@ import { Task, useDeleteTaskMutation } from "@/state/api";
 import { format } from "date-fns";
 import Image from "next/image";
 import React, { useState } from "react";
-import { CalendarDays, Pencil, Trash2, User } from "lucide-react";
+import { CalendarDays, MessageSquare, Pencil, Trash2, User } from "lucide-react";
 import ModalEditTask from "@/components/ModalEditTask";
 
 type Props = {
@@ -121,12 +121,20 @@ const TaskCard = ({ task, canManage, currentUserId }: Props) => {
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 dark:border-stroke-dark">
-          {/* Due date */}
-          <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-neutral-500">
-            <CalendarDays size={12} />
-            <span>
-              {task.dueDate ? format(new Date(task.dueDate), "MMM d") : "No due date"}
-            </span>
+          {/* Due date + comment count */}
+          <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-neutral-500">
+            <div className="flex items-center gap-1.5">
+              <CalendarDays size={12} />
+              <span>
+                {task.dueDate ? format(new Date(task.dueDate), "MMM d") : "No due date"}
+              </span>
+            </div>
+            {(task.comments?.length ?? 0) > 0 && (
+              <div className="flex items-center gap-1">
+                <MessageSquare size={12} />
+                <span>{task.comments!.length}</span>
+              </div>
+            )}
           </div>
 
           {/* Assignee */}

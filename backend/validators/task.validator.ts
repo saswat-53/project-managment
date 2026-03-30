@@ -53,3 +53,34 @@ export const taskIdParamSchema = z.object({
 export const projectIdParamSchema = z.object({
   projectId: z.string().min(1, "Project ID is required"),
 });
+
+/**
+ * Schema for adding a comment to a task
+ */
+export const addCommentSchema = z.object({
+  text: z.string().min(1, "Comment text is required"),
+});
+
+/**
+ * Schema for editing a comment
+ */
+export const editCommentSchema = z.object({
+  text: z.string().min(1, "Comment text is required"),
+});
+
+/**
+ * Schema for comment ID param
+ */
+export const commentIdParamSchema = z.object({
+  taskId: z.string().min(1, "Task ID is required"),
+  commentId: z.string().min(1, "Comment ID is required"),
+});
+
+/**
+ * Schema for reply ID param (taskId + commentId + replyId)
+ */
+export const replyIdParamSchema = z.object({
+  taskId: z.string().min(1, "Task ID is required"),
+  commentId: z.string().min(1, "Comment ID is required"),
+  replyId: z.string().min(1, "Reply ID is required"),
+});

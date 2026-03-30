@@ -2,6 +2,21 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export type TaskStatus = "todo" | "in-progress" | "done";
 
+export interface IReply {
+  _id: mongoose.Types.ObjectId;
+  text: string;
+  author: mongoose.Types.ObjectId;
+  createdAt: Date;
+}
+
+export interface IComment {
+  _id: mongoose.Types.ObjectId;
+  text: string;
+  author: mongoose.Types.ObjectId;
+  createdAt: Date;
+  replies: IReply[];
+}
+
 export interface ITask extends Document {
   title: string;
   description?: string;
@@ -11,7 +26,27 @@ export interface ITask extends Document {
   assignedTo?: mongoose.Types.ObjectId;
   createdBy: mongoose.Types.ObjectId;
   dueDate?: Date;
+  comments: IComment[];
 }
+
+// Reply schema — same shape as a comment but intentionally has no `replies` field
+// This enforces the 2-level limit at the schema level
+const replySchema = new Schema<IReply>(
+  {
+    text: { type: String, required: true, trim: true },
+    author: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  },
+  { timestamps: { createdAt: true, updatedAt: false } }
+);
+
+const commentSchema = new Schema<IComment>(
+  {
+    text: { type: String, required: true, trim: true },
+    author: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    replies: { type: [replySchema], default: [] },
+  },
+  { timestamps: { createdAt: true, updatedAt: false } }
+);
 
 const taskSchema = new Schema<ITask>(
   {
@@ -57,6 +92,11 @@ const taskSchema = new Schema<ITask>(
 
     dueDate: {
       type: Date,
+    },
+
+    comments: {
+      type: [commentSchema],
+      default: [],
     },
   },
   { timestamps: true }

@@ -39,6 +39,21 @@ export interface Project {
   members: string[];
 }
 
+export interface Reply {
+  _id: string;
+  text: string;
+  author: User;
+  createdAt: string;
+}
+
+export interface Comment {
+  _id: string;
+  text: string;
+  author: User;
+  createdAt: string;
+  replies: Reply[];
+}
+
 export interface Task {
   _id: string;
   title: string;
@@ -49,6 +64,7 @@ export interface Task {
   workspace: string;
   assignedTo?: User;
   createdBy?: User;
+  comments?: Comment[];
 }
 
 export interface AuthResponse {
@@ -262,6 +278,69 @@ export const api = createApi({
         "Projects",
       ],
     }),
+    addTaskComment: build.mutation<
+      { message: string; task: Task },
+      { taskId: string; text: string }
+    >({
+      query: ({ taskId, text }) => ({
+        url: `task/${taskId}/comments`,
+        method: "POST",
+        body: { text },
+      }),
+      invalidatesTags: (_result, _error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+      ],
+    }),
+    editTaskComment: build.mutation<
+      { message: string; task: Task },
+      { taskId: string; commentId: string; text: string }
+    >({
+      query: ({ taskId, commentId, text }) => ({
+        url: `task/${taskId}/comments/${commentId}`,
+        method: "PUT",
+        body: { text },
+      }),
+      invalidatesTags: (_result, _error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+      ],
+    }),
+    deleteTaskComment: build.mutation<
+      { message: string; task: Task },
+      { taskId: string; commentId: string }
+    >({
+      query: ({ taskId, commentId }) => ({
+        url: `task/${taskId}/comments/${commentId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+      ],
+    }),
+    addTaskReply: build.mutation<
+      { message: string; task: Task },
+      { taskId: string; commentId: string; text: string }
+    >({
+      query: ({ taskId, commentId, text }) => ({
+        url: `task/${taskId}/comments/${commentId}/replies`,
+        method: "POST",
+        body: { text },
+      }),
+      invalidatesTags: (_result, _error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+      ],
+    }),
+    deleteTaskReply: build.mutation<
+      { message: string; task: Task },
+      { taskId: string; commentId: string; replyId: string }
+    >({
+      query: ({ taskId, commentId, replyId }) => ({
+        url: `task/${taskId}/comments/${commentId}/replies/${replyId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+      ],
+    }),
     updateUserDetail: build.mutation<
       { message: string; user: User },
       { name?: string; email?: string; avatarUrl?: string; position?: string }
@@ -347,4 +426,9 @@ export const {
   useJoinWorkspaceMutation,
   useRemoveWorkspaceMemberMutation,
   useRemoveProjectMemberMutation,
+  useAddTaskCommentMutation,
+  useEditTaskCommentMutation,
+  useDeleteTaskCommentMutation,
+  useAddTaskReplyMutation,
+  useDeleteTaskReplyMutation,
 } = api;

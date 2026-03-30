@@ -8,14 +8,21 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   name: string;
+  size?: "sm" | "md" | "lg";
 };
 
-const Modal = ({ children, isOpen, onClose, name }: Props) => {
+const SIZE_CLASSES = {
+  sm: "max-w-md",
+  md: "max-w-2xl",
+  lg: "max-w-4xl",
+};
+
+const Modal = ({ children, isOpen, onClose, name, size = "md" }: Props) => {
   if (!isOpen) return null;
 
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-50 flex h-full w-full items-center justify-center overflow-y-auto bg-gray-600 bg-opacity-50 p-4">
-      <div className="w-full max-w-2xl rounded-lg bg-white p-4 shadow-lg dark:bg-dark-secondary">
+      <div className={`w-full ${SIZE_CLASSES[size]} rounded-lg bg-white p-4 shadow-lg dark:bg-dark-secondary`}>
         <Header
           name={name}
           buttonComponent={
