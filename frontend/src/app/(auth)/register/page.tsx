@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { useRegisterMutation } from "@/state/api";
 
 export default function RegisterPage() {
@@ -46,13 +47,22 @@ export default function RegisterPage() {
 
         <div className="border border-gray-200 bg-gray-50/80 p-10 backdrop-blur-sm dark:border-stroke-dark dark:bg-dark-secondary/80">
           {/* Logo */}
-          <div className="mb-10 flex items-center gap-3">
-            <div className="flex h-7 w-7 items-center justify-center border-2 border-amber-400">
-              <div className="h-2.5 w-2.5 bg-amber-400" />
+          <div className="mb-10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-7 w-7 items-center justify-center border-2 border-amber-400">
+                <div className="h-2.5 w-2.5 bg-amber-400" />
+              </div>
+              <span className="text-sm font-bold uppercase tracking-widest text-gray-900 dark:text-white">
+                ProjectFlow
+              </span>
             </div>
-            <span className="text-sm font-bold uppercase tracking-widest text-gray-900 dark:text-white">
-              ProjectFlow
-            </span>
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 text-[14px] uppercase tracking-[0.15em] text-zinc-500 transition-colors hover:text-amber-400"
+            >
+              <ArrowLeft size={12} />
+              Home
+            </Link>
           </div>
 
           {/* Heading */}

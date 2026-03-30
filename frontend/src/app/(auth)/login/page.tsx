@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { api, useLoginMutation } from "@/state/api";
 import { setActiveWorkspaceId } from "@/state";
 import { useAppDispatch } from "@/app/redux";
@@ -85,13 +85,22 @@ export default function LoginPage() {
         <div className="w-full max-w-[360px]">
           {/* Logo */}
           <div className="mb-12">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center border-2 border-amber-400">
-                <div className="h-3 w-3 bg-amber-400" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center border-2 border-amber-400">
+                  <div className="h-3 w-3 bg-amber-400" />
+                </div>
+                <span className="text-lg font-bold uppercase tracking-widest text-gray-900 dark:text-white">
+                  ProjectFlow
+                </span>
               </div>
-              <span className="text-lg font-bold uppercase tracking-widest text-gray-900 dark:text-white">
-                ProjectFlow
-              </span>
+              <Link
+                href="/"
+                className="flex items-center gap-1.5 text-[14px] uppercase tracking-[0.15em] text-zinc-500 transition-colors hover:text-amber-400"
+              >
+                <ArrowLeft size={12} />
+                Home
+              </Link>
             </div>
           </div>
 

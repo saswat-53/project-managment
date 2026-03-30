@@ -77,6 +77,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
         <textarea
           className={inputStyles}
           placeholder="Description"
+          rows={4}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
