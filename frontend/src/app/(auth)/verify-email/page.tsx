@@ -158,12 +158,18 @@ export default function VerifyEmailPromptPage() {
             </div>
           )}
 
-          <div className="mt-8 border-t border-gray-100 pt-6 dark:border-dark-bg">
+          <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-6 dark:border-dark-bg">
+            <Link
+              href="/settings"
+              className="text-xs text-zinc-600 transition-colors hover:text-amber-400"
+            >
+              ← Change email in settings
+            </Link>
             <button
               onClick={handleSignOut}
               className="text-xs text-zinc-600 transition-colors hover:text-amber-400"
             >
-              ← Sign out
+              Sign out
             </button>
           </div>
         </div>

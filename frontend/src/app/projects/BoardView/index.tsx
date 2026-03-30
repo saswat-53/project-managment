@@ -26,12 +26,12 @@ const BoardView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Boar
   const [updateTaskStatus] = useUpdateTaskStatusMutation();
 
   const moveTask = (taskId: string, toStatus: string) => {
-    updateTaskStatus({ taskId, status: toStatus });
+    updateTaskStatus({ taskId, status: toStatus, projectId: id });
   };
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="flex gap-4 overflow-x-auto p-4 pb-6">
         {taskStatus.map(({ key, label }) => (
           <TaskColumn
             key={key}
@@ -89,7 +89,7 @@ const TaskColumn = ({
       ref={(instance) => {
         drop(instance);
       }}
-      className={`sl:py-4 rounded-lg py-2 xl:px-2 ${isOver ? "bg-blue-100 dark:bg-neutral-950" : ""}`}
+      className={`min-w-64 flex-1 rounded-lg py-2 xl:px-2 ${isOver ? "bg-blue-100 dark:bg-neutral-950" : ""}`}
     >
       <div className="mb-3 flex w-full">
         <div
@@ -191,7 +191,7 @@ const Task = ({ task, canManage, currentUserId }: TaskProps) => {
             <div className="flex -space-x-[6px] overflow-hidden">
               {task.assignedTo?.avatarUrl && (
                 <Image
-                  key={task.assignedTo._id}
+                  key={`assignee-${task.assignedTo._id}`}
                   src={task.assignedTo.avatarUrl}
                   alt={task.assignedTo.name}
                   width={30}
@@ -202,7 +202,7 @@ const Task = ({ task, canManage, currentUserId }: TaskProps) => {
               )}
               {task.createdBy?.avatarUrl && (
                 <Image
-                  key={task.createdBy._id}
+                  key={`creator-${task.createdBy._id}`}
                   src={task.createdBy.avatarUrl}
                   alt={task.createdBy.name}
                   width={30}

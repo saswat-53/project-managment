@@ -9,6 +9,12 @@ import {
   workspaceIdParamSchema,
 } from "../validators/project.validator";
 import { getUserWorkspaceRole } from "../utils/workspaceRole";
+import {
+  sendProjectAddedEmail,
+  sendRemovedFromProjectEmail,
+  sendProjectDeletedEmail,
+} from "../utils/email.service";
+import { User } from "../models/user.model";
 
 /**
  * Create Project
@@ -107,6 +113,18 @@ export const createProject = async (req: Request, res: Response) => {
 
     workspace.projects.push(project._id);
     await workspace.save();
+
+    // Notify members added at creation time (exclude the creator)
+    const addedMemberIds = validMembers.filter((id) => id !== userId.toString());
+    if (addedMemberIds.length > 0) {
+      const addedUsers = await User.find({ _id: { $in: addedMemberIds } }).select("email");
+      const projectUrl = `${process.env.FRONTEND_URL}/projects/${project._id}`;
+      addedUsers.forEach((u) => {
+        sendProjectAddedEmail(u.email, name, workspace.name, projectUrl).catch(
+          (err) => console.error("Project added email failed:", err)
+        );
+      });
+    }
 
     return res.status(201).json({
       message: "Project created successfully",
@@ -349,6 +367,11 @@ export const updateProject = async (req: Request, res: Response) => {
       // Get existing members
       const existingMemberIds = project.members.map((id) => id.toString());
 
+      // Track truly new members (not already in the project) for email notification
+      const trulyNewMemberIds = members.filter(
+        (id: string) => !existingMemberIds.includes(id)
+      );
+
       // Add new members to existing ones (additive, no duplicates using Set)
       const combinedMemberSet = new Set<string>([...existingMemberIds, ...members]);
       const newMemberIds = Array.from(combinedMemberSet);
@@ -356,6 +379,17 @@ export const updateProject = async (req: Request, res: Response) => {
       project.members = newMemberIds.map(
         (id) => new mongoose.Types.ObjectId(id)
       );
+
+      // Send email to newly added members (fire-and-forget, don't block response)
+      if (trulyNewMemberIds.length > 0) {
+        const newUsers = await User.find({ _id: { $in: trulyNewMemberIds } }).select("email");
+        const projectUrl = `${process.env.FRONTEND_URL}/projects/${project._id}`;
+        newUsers.forEach((u) => {
+          sendProjectAddedEmail(u.email, project.name, workspace.name, projectUrl).catch(
+            (err) => console.error("Project added email failed:", err)
+          );
+        });
+      }
     }
 
     // Restore workspace to ObjectId before saving (it was populated as full object)
@@ -417,6 +451,15 @@ export const removeProjectMember = async (req: Request, res: Response) => {
     project.workspace = workspace._id;
     await project.save();
 
+    // Notify the removed member (fire-and-forget)
+    User.findById(memberId).select("email").then((removedUser) => {
+      if (removedUser) {
+        sendRemovedFromProjectEmail(removedUser.email, project.name, workspace.name).catch((err) =>
+          console.error("Failed to send project removal email:", err)
+        );
+      }
+    }).catch(() => {});
+
     return res.status(200).json({ message: "Member removed from project successfully" });
   } catch (error) {
     console.error("Remove project member error:", error);
@@ -458,6 +501,22 @@ export const deleteProject = async (req: Request, res: Response) => {
     const workspaceRole = await getUserWorkspaceRole(userId.toString(), workspace._id.toString());
     if (workspaceRole !== "admin" && workspaceRole !== "manager") {
       return res.status(403).json({ message: "Only admins and managers can delete projects" });
+    }
+
+    // Notify all project members except the requester before deletion (fire-and-forget)
+    const userIdStr = userId.toString();
+    const otherMemberIds = project.members
+      .map((id) => id.toString())
+      .filter((id) => id !== userIdStr);
+
+    if (otherMemberIds.length > 0) {
+      User.find({ _id: { $in: otherMemberIds } }).select("email").then((members) => {
+        members.forEach((m) => {
+          sendProjectDeletedEmail(m.email, project.name, workspace.name).catch((err) =>
+            console.error("Failed to send project deleted email:", err)
+          );
+        });
+      }).catch(() => {});
     }
 
     // Cascade delete and workspace cleanup handled by Project pre-delete hook

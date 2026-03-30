@@ -9,6 +9,9 @@ import {
   projectIdParamSchema,
 } from "../validators/task.validator";
 import { getUserWorkspaceRole } from "../utils/workspaceRole";
+import { getIO } from "../socket";
+import { User } from "../models/user.model";
+import { sendTaskAssignedEmail } from "../utils/email.service";
 
 /**
  * Recomputes and persists the project status based on its current tasks.
@@ -139,9 +142,29 @@ export const createTask = async (req: Request, res: Response) => {
 
     await recomputeProjectStatus(project._id);
 
+    const populatedTask = await Task.findById(task._id)
+      .populate("assignedTo", "name email avatarUrl")
+      .populate("createdBy", "name email avatarUrl");
+    getIO().to(`project:${project._id.toString()}`).emit("task:created", { task: populatedTask });
+
+    // Notify assignee if task is assigned to someone other than the creator (fire-and-forget)
+    if (assignedUserId && assignedUserId.toString() !== userId.toString()) {
+      Promise.all([
+        User.findById(assignedUserId).select("email"),
+        User.findById(userId).select("name"),
+      ]).then(([assignee, assigner]) => {
+        if (assignee && assigner) {
+          const taskUrl = `${process.env.FRONTEND_URL}/projects/${project._id}`;
+          sendTaskAssignedEmail(assignee.email, title, project.name, assigner.name, taskUrl).catch(
+            (err) => console.error("Failed to send task assigned email:", err)
+          );
+        }
+      }).catch(() => {});
+    }
+
     return res.status(201).json({
       message: "Task created successfully",
-      task,
+      task: populatedTask,
     });
   } catch (error) {
     console.error("Create task error:", error);
@@ -301,6 +324,9 @@ export const updateTask = async (req: Request, res: Response) => {
       });
     }
 
+    // Snapshot previous assignee before any updates (used for change detection below)
+    const previousAssigneeId = task.assignedTo?.toString();
+
     // Update fields
     if (title !== undefined) task.title = title;
     if (description !== undefined) task.description = description;
@@ -331,9 +357,34 @@ export const updateTask = async (req: Request, res: Response) => {
 
     await recomputeProjectStatus(project._id);
 
+    const populatedTask = await Task.findById(task._id)
+      .populate("assignedTo", "name email avatarUrl")
+      .populate("createdBy", "name email avatarUrl");
+    getIO().to(`project:${project._id.toString()}`).emit("task:updated", { task: populatedTask });
+
+    // Notify new assignee if assignment changed to a different user (fire-and-forget)
+    // Skip if: unassigning (null), same person re-assigned, or self-assigned
+    if (
+      assignedTo &&
+      assignedTo !== previousAssigneeId &&
+      assignedTo !== userId.toString()
+    ) {
+      Promise.all([
+        User.findById(assignedTo).select("email"),
+        User.findById(userId).select("name"),
+      ]).then(([assignee, assigner]) => {
+        if (assignee && assigner) {
+          const taskUrl = `${process.env.FRONTEND_URL}/projects/${project._id}`;
+          sendTaskAssignedEmail(assignee.email, task.title, project.name, assigner.name, taskUrl).catch(
+            (err) => console.error("Failed to send task assigned email:", err)
+          );
+        }
+      }).catch(() => {});
+    }
+
     return res.status(200).json({
       message: "Task updated successfully",
-      task,
+      task: populatedTask,
     });
   } catch (error) {
     console.error("Update task error:", error);
@@ -395,6 +446,7 @@ export const deleteTask = async (req: Request, res: Response) => {
     await task.deleteOne();
 
     await recomputeProjectStatus(projectId);
+    getIO().to(`project:${projectId.toString()}`).emit("task:deleted", { taskId });
 
     return res.status(200).json({ message: "Task deleted successfully" });
   } catch (error) {

@@ -42,13 +42,13 @@ const router = Router();
  *                 type: string
  *                 example: 60d0fe4f5311236168a109ca
  *               assignedTo:
- *                 type: array
- *                 items:
- *                   type: string
- *                   example: 60d0fe4f5311236168a109ca
+ *                 type: string
+ *                 example: 60d0fe4f5311236168a109ca
+ *                 nullable: true
+ *                 description: Single user ObjectId to assign the task to
  *               status:
  *                 type: string
- *                 enum: [todo, in_progress, in_review, completed]
+ *                 enum: [todo, in-progress, done]
  *                 example: todo
  *               priority:
  *                 type: string
@@ -66,13 +66,10 @@ const router = Router();
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
  *                 message:
  *                   type: string
  *                   example: Task created successfully
- *                 data:
+ *                 task:
  *                   $ref: '#/components/schemas/Task'
  *       400:
  *         description: Bad request
@@ -105,10 +102,7 @@ router.post("/tasks", verifyJWT, createTask);
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
+ *                 tasks:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Task'
@@ -149,13 +143,13 @@ router.get("/project/:projectId", verifyJWT, getTasksByProject);
  *                 type: string
  *                 example: Updated description
  *               assignedTo:
- *                 type: array
- *                 items:
- *                   type: string
- *                   example: 60d0fe4f5311236168a109ca
+ *                 type: string
+ *                 example: 60d0fe4f5311236168a109ca
+ *                 nullable: true
+ *                 description: Single user ObjectId to assign the task to
  *               status:
  *                 type: string
- *                 enum: [todo, in_progress, in_review, completed]
+ *                 enum: [todo, in-progress, done]
  *                 example: in_progress
  *               priority:
  *                 type: string
@@ -173,13 +167,10 @@ router.get("/project/:projectId", verifyJWT, getTasksByProject);
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
  *                 message:
  *                   type: string
  *                   example: Task updated successfully
- *                 data:
+ *                 task:
  *                   $ref: '#/components/schemas/Task'
  *       401:
  *         description: Unauthorized
