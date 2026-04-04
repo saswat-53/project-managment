@@ -12,6 +12,10 @@ export const useProjectSocket = (projectId: string) => {
     const socket = getSocket();
     socket.emit("join:project", projectId);
 
+    // Re-join room after server restarts (Render spins down on free tier)
+    const handleReconnect = () => socket.emit("join:project", projectId);
+    socket.on("connect", handleReconnect);
+
     const handleTaskCreated = ({ task }: { task: Task }) => {
       dispatch(api.util.updateQueryData("getTasks", { projectId }, (draft) => {
         const exists = draft.some((t) => t._id === task._id);
@@ -39,6 +43,7 @@ export const useProjectSocket = (projectId: string) => {
 
     return () => {
       socket.emit("leave:project", projectId);
+      socket.off("connect", handleReconnect);
       socket.off("task:created", handleTaskCreated);
       socket.off("task:updated", handleTaskUpdated);
       socket.off("task:deleted", handleTaskDeleted);

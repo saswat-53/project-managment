@@ -1,12 +1,26 @@
 "use client";
 
 import Modal from "@/components/Modal";
-import { Task, useUpdateTaskMutation, useGetWorkspaceMembersQuery, useAddTaskCommentMutation, useEditTaskCommentMutation, useDeleteTaskCommentMutation, useAddTaskReplyMutation, useDeleteTaskReplyMutation, useGetCurrentUserQuery } from "@/state/api";
+import {
+  Task,
+  useUpdateTaskMutation,
+  useGetWorkspaceMembersQuery,
+  useAddTaskCommentMutation,
+  useEditTaskCommentMutation,
+  useDeleteTaskCommentMutation,
+  useAddTaskReplyMutation,
+  useDeleteTaskReplyMutation,
+  useGetCurrentUserQuery,
+  useGetPresignedUploadUrlMutation,
+  useConfirmAttachmentUploadMutation,
+  useDeleteTaskAttachmentMutation,
+  Attachment,
+} from "@/state/api";
 import { useAppSelector } from "@/app/redux";
 import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import Image from "next/image";
-import { CornerDownRight, Pencil, Trash2, User as UserIcon } from "lucide-react";
+import { CornerDownRight, Pencil, Trash2, User as UserIcon, Paperclip, FileText, FileImage, File, X, Upload } from "lucide-react";
 
 type Props = {
   isOpen: boolean;
@@ -21,6 +35,9 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
   const [deleteTaskComment] = useDeleteTaskCommentMutation();
   const [addTaskReply] = useAddTaskReplyMutation();
   const [deleteTaskReply] = useDeleteTaskReplyMutation();
+  const [getPresignedUploadUrl] = useGetPresignedUploadUrlMutation();
+  const [confirmAttachmentUpload] = useConfirmAttachmentUploadMutation();
+  const [deleteTaskAttachment] = useDeleteTaskAttachmentMutation();
   const { data: currentUser } = useGetCurrentUserQuery();
   const activeWorkspaceId = useAppSelector(
     (state) => state.global.activeWorkspaceId,
@@ -49,6 +66,9 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
   const [editingCommentText, setEditingCommentText] = useState("");
   const [replyingToCommentId, setReplyingToCommentId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTitle(task.title);
@@ -90,6 +110,62 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
     setCommentText("");
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!fileInputRef.current) return;
+    fileInputRef.current.value = "";
+    if (!file) return;
+
+    setUploadError("");
+    setIsUploading(true);
+    try {
+      // Step 1: get presigned URL from backend
+      const { uploadUrl, key } = await getPresignedUploadUrl({
+        taskId: task._id,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      }).unwrap();
+
+      // Step 2: upload directly to R2 (bypasses our server)
+      const r2Res = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      if (!r2Res.ok) throw new Error("Upload to storage failed.");
+
+      // Step 3: save metadata to MongoDB
+      await confirmAttachmentUpload({
+        taskId: task._id,
+        key,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      }).unwrap();
+    } catch (err: any) {
+      setUploadError(err?.data?.message ?? err?.message ?? "Upload failed.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    await deleteTaskAttachment({ taskId: task._id, attachmentId });
+  };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith("image/")) return <FileImage size={14} className="text-blue-400" />;
+    if (fileType === "application/pdf") return <FileText size={14} className="text-red-400" />;
+    return <File size={14} className="text-gray-400" />;
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   const handleSubmit = async () => {
     if (!title) return;
     await updateTask({
@@ -111,7 +187,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} name="Edit Task" size="md">
       <form
-        className="mt-4 space-y-6"
+        className="mt-4 space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
           handleSubmit();
@@ -169,6 +245,91 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
         >
           {isLoading ? "Saving..." : "Save Changes"}
         </button>
+
+        {/* Attachments */}
+        <div className="border-t border-gray-200 pt-4 dark:border-stroke-dark">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <Paperclip size={14} />
+              Attachments {task.attachments?.length ? `(${task.attachments.length})` : ""}
+            </h3>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="flex items-center gap-1 rounded bg-amber-400 px-2.5 py-1 text-xs font-medium text-zinc-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Upload size={11} />
+              {isUploading ? "Uploading…" : "Upload"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf,.docx,.xlsx,.txt"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+          </div>
+
+          {uploadError && (
+            <p className="mb-2 text-xs text-red-400">{uploadError}</p>
+          )}
+
+          {task.attachments && task.attachments.length > 0 ? (
+            <ul className="space-y-2">
+              {task.attachments.map((att) => {
+                const isOwn = att.uploadedBy._id === currentUser?._id;
+                return (
+                  <li
+                    key={att._id}
+                    className="group flex items-center gap-2.5 rounded-md border border-gray-200 px-3 py-2 dark:border-stroke-dark"
+                  >
+                    {att.fileType.startsWith("image/") ? (
+                      <Image
+                        src={att.url}
+                        alt={att.fileName}
+                        width={32}
+                        height={32}
+                        className="h-8 w-8 flex-shrink-0 rounded object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-gray-100 dark:bg-dark-tertiary">
+                        {getFileIcon(att.fileType)}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <a
+                        href={att.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block truncate text-xs font-medium text-gray-700 hover:text-amber-500 dark:text-gray-300 dark:hover:text-amber-400"
+                        title={att.fileName}
+                      >
+                        {att.fileName}
+                      </a>
+                      <p className="text-[10px] text-gray-400 dark:text-neutral-500">
+                        {formatBytes(att.fileSize)} · {att.uploadedBy.name} · {format(new Date(att.createdAt), "MMM d")}
+                      </p>
+                    </div>
+                    {(isOwn || canModerate) && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAttachment(att._id)}
+                        className="flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100 text-gray-400 hover:text-red-500 dark:text-neutral-600 dark:hover:text-red-400"
+                        title="Delete attachment"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-xs text-gray-400 dark:text-neutral-500">No attachments yet.</p>
+          )}
+        </div>
 
         {/* Comments */}
         <div className="border-t border-gray-200 pt-4 dark:border-stroke-dark">

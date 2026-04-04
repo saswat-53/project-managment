@@ -54,6 +54,17 @@ export interface Comment {
   replies: Reply[];
 }
 
+export interface Attachment {
+  _id: string;
+  key: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  url: string;
+  uploadedBy: User;
+  createdAt: string;
+}
+
 export interface Task {
   _id: string;
   title: string;
@@ -65,6 +76,7 @@ export interface Task {
   assignedTo?: User;
   createdBy?: User;
   comments?: Comment[];
+  attachments?: Attachment[];
 }
 
 export interface AuthResponse {
@@ -393,6 +405,43 @@ export const api = createApi({
       query: (token) => ({ url: `workspace/join/${token}`, method: "POST" }),
       invalidatesTags: ["Workspaces"],
     }),
+
+    // Attachments
+    getPresignedUploadUrl: build.mutation<
+      { uploadUrl: string; key: string },
+      { taskId: string; fileName: string; fileType: string; fileSize: number }
+    >({
+      query: ({ taskId, ...body }) => ({
+        url: `task/${taskId}/attachments/presign`,
+        method: "POST",
+        body,
+      }),
+    }),
+    confirmAttachmentUpload: build.mutation<
+      { message: string; attachment: Attachment; task: Task },
+      { taskId: string; key: string; fileName: string; fileType: string; fileSize: number }
+    >({
+      query: ({ taskId, ...body }) => ({
+        url: `task/${taskId}/attachments/confirm`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+      ],
+    }),
+    deleteTaskAttachment: build.mutation<
+      { message: string; task: Task },
+      { taskId: string; attachmentId: string }
+    >({
+      query: ({ taskId, attachmentId }) => ({
+        url: `task/${taskId}/attachments/${attachmentId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+      ],
+    }),
   }),
 });
 
@@ -431,4 +480,7 @@ export const {
   useDeleteTaskCommentMutation,
   useAddTaskReplyMutation,
   useDeleteTaskReplyMutation,
+  useGetPresignedUploadUrlMutation,
+  useConfirmAttachmentUploadMutation,
+  useDeleteTaskAttachmentMutation,
 } = api;

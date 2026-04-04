@@ -17,6 +17,17 @@ export interface IComment {
   replies: IReply[];
 }
 
+export interface IAttachment {
+  _id: mongoose.Types.ObjectId;
+  key: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  url: string;
+  uploadedBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+}
+
 export interface ITask extends Document {
   title: string;
   description?: string;
@@ -27,6 +38,7 @@ export interface ITask extends Document {
   createdBy: mongoose.Types.ObjectId;
   dueDate?: Date;
   comments: IComment[];
+  attachments: IAttachment[];
 }
 
 // Reply schema — same shape as a comment but intentionally has no `replies` field
@@ -44,6 +56,18 @@ const commentSchema = new Schema<IComment>(
     text: { type: String, required: true, trim: true },
     author: { type: Schema.Types.ObjectId, ref: "User", required: true },
     replies: { type: [replySchema], default: [] },
+  },
+  { timestamps: { createdAt: true, updatedAt: false } }
+);
+
+const attachmentSchema = new Schema<IAttachment>(
+  {
+    key: { type: String, required: true },
+    fileName: { type: String, required: true, trim: true },
+    fileType: { type: String, required: true },
+    fileSize: { type: Number, required: true },
+    url: { type: String, required: true },
+    uploadedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
@@ -96,6 +120,11 @@ const taskSchema = new Schema<ITask>(
 
     comments: {
       type: [commentSchema],
+      default: [],
+    },
+
+    attachments: {
+      type: [attachmentSchema],
       default: [],
     },
   },
