@@ -56,6 +56,7 @@ interface AuthenticatedRequest extends Request {
   user?: {
     _id: string;
   };
+  body: any;
 }
 
 
