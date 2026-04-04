@@ -144,7 +144,9 @@ export const createTask = async (req: Request, res: Response) => {
 
     const populatedTask = await Task.findById(task._id)
       .populate("assignedTo", "name email avatarUrl")
-      .populate("createdBy", "name email avatarUrl");
+      .populate("createdBy", "name email avatarUrl")
+      .populate("comments.author", "name email avatarUrl")
+      .populate("comments.replies.author", "name email avatarUrl");
     getIO().to(`project:${project._id.toString()}`).emit("task:created", { task: populatedTask });
 
     // Notify assignee if task is assigned to someone other than the creator (fire-and-forget)
@@ -227,8 +229,10 @@ export const getTasksByProject = async (req: Request, res: Response) => {
     }
 
     const tasks = await Task.find({ project: projectId })
-      .populate("assignedTo", "name email")
-      .populate("createdBy", "name email");
+      .populate("assignedTo", "name email avatarUrl")
+      .populate("createdBy", "name email avatarUrl")
+      .populate("comments.author", "name email avatarUrl")
+      .populate("comments.replies.author", "name email avatarUrl");
 
     return res.status(200).json({ tasks });
   } catch (error) {
@@ -359,7 +363,9 @@ export const updateTask = async (req: Request, res: Response) => {
 
     const populatedTask = await Task.findById(task._id)
       .populate("assignedTo", "name email avatarUrl")
-      .populate("createdBy", "name email avatarUrl");
+      .populate("createdBy", "name email avatarUrl")
+      .populate("comments.author", "name email avatarUrl")
+      .populate("comments.replies.author", "name email avatarUrl");
     getIO().to(`project:${project._id.toString()}`).emit("task:updated", { task: populatedTask });
 
     // Notify new assignee if assignment changed to a different user (fire-and-forget)

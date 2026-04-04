@@ -5,6 +5,8 @@ import {
   updateTask,
   deleteTask,
 } from "../controllers/task.controller";
+import { addComment, deleteComment, editComment, addReply, deleteReply } from "../controllers/comment.controller";
+import { presignAttachmentUpload, confirmAttachmentUpload, deleteAttachment } from "../controllers/attachment.controller";
 import { verifyJWT } from "../middlewares/auth";
 
 const router = Router();
@@ -219,5 +221,16 @@ router.put("/:taskId", verifyJWT, updateTask);
  *         description: Task not found
  */
 router.delete("/:taskId", verifyJWT, deleteTask);
+
+// Attachments
+router.post("/:taskId/attachments/presign", verifyJWT, presignAttachmentUpload);
+router.post("/:taskId/attachments/confirm", verifyJWT, confirmAttachmentUpload);
+router.delete("/:taskId/attachments/:attachmentId", verifyJWT, deleteAttachment);
+
+router.post("/:taskId/comments", verifyJWT, addComment);
+router.put("/:taskId/comments/:commentId", verifyJWT, editComment);
+router.delete("/:taskId/comments/:commentId", verifyJWT, deleteComment);
+router.post("/:taskId/comments/:commentId/replies", verifyJWT, addReply);
+router.delete("/:taskId/comments/:commentId/replies/:replyId", verifyJWT, deleteReply);
 
 export default router;
