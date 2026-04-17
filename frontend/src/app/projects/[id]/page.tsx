@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { useParams } from "next/navigation";
 import ProjectHeader from "@/app/projects/ProjectHeader";
 import Board from "../BoardView";
 import List from "../ListView";
@@ -13,12 +14,8 @@ import { useGetTasksQuery, useGetCurrentUserQuery, useGetWorkspaceMembersQuery, 
 import { useAppSelector } from "@/app/redux";
 import { useProjectSocket } from "@/hooks/useProjectSocket";
 
-type Props = {
-  params: Promise<{ id: string }>;
-};
-
-const Project = ({ params }: Props) => {
-  const { id } = React.use(params);
+const Project = () => {
+  const { id } = useParams() as { id: string };
   useProjectSocket(id);
   const [activeTab, setActiveTab] = useState("Board");
   const [isModalNewTaskOpen, setIsModalNewTaskOpen] = useState(false);
