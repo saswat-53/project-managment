@@ -8,7 +8,6 @@ import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 import { initIO } from "./socket";
-import { scheduleTaskDigest } from "./jobs/taskDigest.job";
 
 const app = express();
 app.use(
@@ -45,7 +44,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 // Root info
-app.get("/", (_req, res) => {
+app.get("/", (_req: import("express").Request, res: import("express").Response) => {
   res.json({ message: "Backend Running... | API Docs available at /api-docs | Health check at /health" });
 });
 

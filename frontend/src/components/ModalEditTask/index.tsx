@@ -124,6 +124,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
     setUploadError("");
     setIsUploading(true);
     try {
+      // Step 1: get presigned URL from backend
       const { uploadUrl, key } = await getPresignedUploadUrl({
         taskId: task._id,
         fileName: file.name,
@@ -131,6 +132,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
         fileSize: file.size,
       }).unwrap();
 
+      // Step 2: upload directly to R2 (bypasses our server)
       const r2Res = await fetch(uploadUrl, {
         method: "PUT",
         body: file,
@@ -138,6 +140,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
       });
       if (!r2Res.ok) throw new Error("Upload to storage failed.");
 
+      // Step 3: save metadata to MongoDB
       await confirmAttachmentUpload({
         taskId: task._id,
         key,

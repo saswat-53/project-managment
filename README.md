@@ -12,9 +12,11 @@ A full-stack project management application with real-time updates, role-based a
 - **Projects & Tasks** — Full CRUD with status tracking, priority levels, due dates, and assignees
 - **4 Project Views** — Kanban board (drag-and-drop), List, Timeline (Gantt), and Table
 - **Real-Time Updates** — Live task/project changes via Socket.IO
-- **Email Notifications** — Workspace invites, project assignments, and daily task digest (cron)
+- **Email Notifications** — Workspace invites, project assignments, role changes, removals, and daily task digest (cron)
 - **Authentication** — JWT with HTTP-only cookies, email verification, and password reset flow
 - **Dark Mode** — System-wide dark mode toggle, persisted across sessions
+- **Task Comments & Replies** — Threaded 2-level comment system with inline edit, reply toggle, and permission-based delete
+- **File Attachments (Cloudflare R2)** — Upload files directly to R2 via presigned URLs; attachments stored per-task with metadata
 
 ### Project Views
 | View | Description |
@@ -50,6 +52,7 @@ A full-stack project management application with real-time updates, role-based a
 | Resend | — | Transactional emails |
 | Zod | 4.x | Request validation |
 | Swagger UI | — | API documentation |
+| AWS SDK (S3 Client) | 3.x | Cloudflare R2 file uploads via presigned URLs |
 
 ### Frontend
 | Tech | Version | Purpose |
@@ -72,11 +75,11 @@ A full-stack project management application with real-time updates, role-based a
 project-managment/
 ├── backend/
 │   ├── config/          # DB connection, Swagger setup
-│   ├── controllers/     # Route handlers (auth, workspace, project, task)
+│   ├── controllers/     # Route handlers (auth, workspace, project, task, attachment, comment)
 │   ├── models/          # Mongoose schemas (User, Workspace, Project, Task, WorkspaceMember, InviteToken)
 │   ├── routes/          # Express routers
 │   ├── middlewares/     # JWT auth middleware
-│   ├── utils/           # Email service, JWT helpers, workspace role helper
+│   ├── utils/           # Email service, JWT helpers, workspace role helper, R2 client
 │   ├── validators/      # Zod validation schemas
 │   ├── jobs/            # node-cron background jobs (daily task digest)
 │   ├── socket.ts        # Socket.IO event setup
@@ -140,6 +143,13 @@ RESEND_API_KEY=your_resend_api_key
 EMAIL_FROM=onboarding@resend.dev
 
 FRONTEND_URL=http://localhost:3000
+
+# Cloudflare R2 (file attachments)
+R2_ACCOUNT_ID=your_cloudflare_account_id
+R2_ACCESS_KEY_ID=your_r2_access_key_id
+R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+R2_BUCKET_NAME=your_r2_bucket_name
+R2_PUBLIC_URL=https://pub-xxxx.r2.dev
 ```
 
 Start the backend:
@@ -189,6 +199,8 @@ http://localhost:5000/api-docs
 | Workspaces | `/api/workspace` | CRUD, members, roles, invite, join |
 | Projects | `/api/project` | CRUD, member management |
 | Tasks | `/api/task` | CRUD, status/priority updates |
+| Attachments | `/api/task/:id/attachments` | Get presigned upload URL, delete attachment |
+| Comments | `/api/task/:id/comments` | Add/edit/delete comment, add/delete reply |
 | Health | `/health` | Server + DB liveness check |
 
 **Auth**: All protected routes use HTTP-only cookie-based JWT. Include `credentials: "include"` in all API requests.
@@ -202,7 +214,11 @@ Emails are sent via the [Resend](https://resend.com) API for:
 - **Account verification** — on registration
 - **Password reset** — via time-bound token link
 - **Workspace invite** — when admin/manager invites a user
-- **Project assignment** — when added to a project
+- **Role changed** — when a member's workspace role is updated
+- **Removed from workspace** — when a member is kicked from a workspace
+- **Project assignment / removal** — when added to or removed from a project
+- **Project deleted** — notifies all project members (excluding the requester)
+- **Task assigned** — when a task is created or reassigned to you
 - **Daily task digest** — runs at 00:00 UTC via cron; summarizes overdue and due-soon tasks per user
 
 ---
@@ -221,6 +237,13 @@ Emails are sent via the [Resend](https://resend.com) API for:
 | `RESEND_API_KEY` | Yes | Resend email API key |
 | `EMAIL_FROM` | Yes | Sender email address |
 | `FRONTEND_URL` | Yes | Frontend URL (used in email links) |
+| `R2_ACCOUNT_ID` | Yes* | Cloudflare account ID for R2 endpoint |
+| `R2_ACCESS_KEY_ID` | Yes* | R2 API token access key |
+| `R2_SECRET_ACCESS_KEY` | Yes* | R2 API token secret |
+| `R2_BUCKET_NAME` | Yes* | R2 bucket name |
+| `R2_PUBLIC_URL` | Yes* | Public R2 domain (e.g. `https://pub-xxxx.r2.dev`) |
+
+*Required only if using file attachments. Omit to disable the feature.
 
 ### Frontend
 
@@ -240,6 +263,10 @@ Emails are sent via the [Resend](https://resend.com) API for:
 
 **`activeWorkspaceId` in Redux** — The currently selected workspace ID is persisted in Redux (via `redux-persist`). All workspace-scoped queries automatically `skip` if no workspace is active, preventing unauthorized requests on login.
 
+**Presigned Upload Pattern (R2)** — File uploads bypass the Node.js server entirely. The backend generates a short-lived presigned PUT URL (5 min), the browser uploads directly to Cloudflare R2, and only the metadata (`key`, `fileName`, `fileSize`, `url`) is saved to MongoDB. This keeps the API server stateless and avoids large payload handling.
+
+**Embedded Comments Subdocument** — Task comments are stored as an embedded array inside the Task document (not a separate collection). This keeps reads fast (no joins) and works well given the bounded size of comment threads per task.
+
 ---
 
 ## Roadmap / In Progress
@@ -248,8 +275,6 @@ Emails are sent via the [Resend](https://resend.com) API for:
 - [ ] Global task search (`/search`)
 - [ ] Teams management (`/teams`)
 - [ ] Priority-filtered task views (`/priority/*`)
-- [ ] File/attachment uploads (R2 / object storage)
-- [ ] Task comments
 
 ---
 
