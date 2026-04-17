@@ -103,7 +103,7 @@ const TableView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Prop
   ];
 
   return (
-    <div className="h-[600px] w-full px-4 pb-8 xl:px-6">
+    <div className="flex flex-col w-full h-full px-4 pb-8 xl:px-6">
       {editingTask && (
         <ModalEditTask
           isOpen={!!editingTask}
@@ -125,13 +125,15 @@ const TableView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Prop
           isSmallText
         />
       </div>
-      <DataGrid
-        rows={tasks || []}
-        columns={columns}
-        getRowId={(row) => row._id}
-        className={dataGridClassNames}
-        sx={dataGridSxStyles(isDarkMode)}
-      />
+      <div className="flex-1 min-h-0">
+        <DataGrid
+          rows={tasks || []}
+          columns={columns}
+          getRowId={(row) => row._id}
+          className={dataGridClassNames}
+          sx={{ ...dataGridSxStyles(isDarkMode), height: "100%" }}
+        />
+      </div>
     </div>
   );
 };

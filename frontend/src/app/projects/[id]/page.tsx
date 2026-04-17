@@ -14,11 +14,11 @@ import { useAppSelector } from "@/app/redux";
 import { useProjectSocket } from "@/hooks/useProjectSocket";
 
 type Props = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 const Project = ({ params }: Props) => {
-  const { id } = params;
+  const { id } = React.use(params);
   useProjectSocket(id);
   const [activeTab, setActiveTab] = useState("Board");
   const [isModalNewTaskOpen, setIsModalNewTaskOpen] = useState(false);
