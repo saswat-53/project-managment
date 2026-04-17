@@ -7,6 +7,7 @@ import {
 } from "../controllers/task.controller";
 import { addComment, deleteComment, editComment, addReply, deleteReply } from "../controllers/comment.controller";
 import { presignAttachmentUpload, confirmAttachmentUpload, deleteAttachment } from "../controllers/attachment.controller";
+import { generateTaskPlan } from "../controllers/aiPlan.controller";
 import { verifyJWT } from "../middlewares/auth";
 
 const router = Router();
@@ -221,6 +222,9 @@ router.put("/:taskId", verifyJWT, updateTask);
  *         description: Task not found
  */
 router.delete("/:taskId", verifyJWT, deleteTask);
+
+// AI Plan generation
+router.post("/:taskId/generate-plan", verifyJWT, generateTaskPlan);
 
 // Attachments
 router.post("/:taskId/attachments/presign", verifyJWT, presignAttachmentUpload);

@@ -4,6 +4,7 @@ import {
   Filter,
   Grid3x3,
   List,
+  Pencil,
   PlusSquare,
   Share2,
   Table,
@@ -13,7 +14,8 @@ import {
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import ModalNewProject from "./ModalNewProject";
-import { useDeleteProjectMutation } from "@/state/api";
+import ModalEditProject from "@/components/ModalEditProject";
+import { useDeleteProjectMutation, Project } from "@/state/api";
 
 type Props = {
   activeTab: string;
@@ -21,11 +23,13 @@ type Props = {
   onAddMember?: () => void;
   projectId?: string;
   canManage?: boolean;
+  project?: Project;
 };
 
-const ProjectHeader = ({ activeTab, setActiveTab, onAddMember, projectId, canManage }: Props) => {
+const ProjectHeader = ({ activeTab, setActiveTab, onAddMember, projectId, canManage, project }: Props) => {
   const router = useRouter();
   const [isModalNewProjectOpen, setIsModalNewProjectOpen] = useState(false);
+  const [isModalEditProjectOpen, setIsModalEditProjectOpen] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [deleteProject, { isLoading: isDeleting }] = useDeleteProjectMutation();
@@ -48,13 +52,29 @@ const ProjectHeader = ({ activeTab, setActiveTab, onAddMember, projectId, canMan
         isOpen={isModalNewProjectOpen}
         onClose={() => setIsModalNewProjectOpen(false)}
       />
+      {project && (
+        <ModalEditProject
+          isOpen={isModalEditProjectOpen}
+          onClose={() => setIsModalEditProjectOpen(false)}
+          project={project}
+        />
+      )}
       <div className="pb-6 pt-6 lg:pb-4 lg:pt-8">
         <Header
-          name="Product Design Development"
+          name={project?.name ?? "Project"}
           buttonComponent={
             <div className="flex items-center gap-2">
               {deleteError && (
                 <span className="text-xs text-red-500">{deleteError}</span>
+              )}
+              {canManage && project && (
+                <button
+                  onClick={() => setIsModalEditProjectOpen(true)}
+                  className="flex items-center rounded-md border border-gray-300 px-3 py-2 text-gray-600 hover:border-amber-400 hover:text-amber-500 dark:border-stroke-dark dark:text-neutral-400 dark:hover:border-amber-400 dark:hover:text-amber-400"
+                  title="Edit project"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
               )}
               {canManage && projectId && (
                 isConfirmingDelete ? (

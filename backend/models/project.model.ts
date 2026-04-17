@@ -4,6 +4,9 @@ export interface IProject extends Document {
   name: string;
   description?: string;
   status: "backlog" | "in-progress" | "completed";
+  repoUrl?: string;
+  /** AES-256-GCM encrypted GitHub PAT — never returned in API responses */
+  githubToken?: string;
   workspace: mongoose.Types.ObjectId;
   members: mongoose.Types.ObjectId[];
   tasks: mongoose.Types.ObjectId[];
@@ -20,6 +23,16 @@ const projectSchema = new Schema<IProject>(
     description: {
       type: String,
       trim: true,
+    },
+
+    repoUrl: {
+      type: String,
+      trim: true,
+    },
+
+    githubToken: {
+      type: String,
+      // Stored encrypted — never returned in API responses (stripped in controllers)
     },
 
     status: {

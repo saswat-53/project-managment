@@ -29,8 +29,8 @@ const TaskCard = ({ task, canManage, currentUserId }: Props) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
   const [deleteTask, { isLoading: isDeleting }] = useDeleteTaskMutation();
-  const status = STATUS_CONFIG[task.status] ?? STATUS_CONFIG["todo"];
-  const borderColor = STATUS_BORDER[task.status] ?? STATUS_BORDER["todo"];
+  const status = STATUS_CONFIG[task.status ?? "todo"] ?? STATUS_CONFIG["todo"];
+  const borderColor = STATUS_BORDER[task.status ?? "todo"] ?? STATUS_BORDER["todo"];
   const isDone = task.status === "done";
 
   const isCreator = task.createdBy?._id === currentUserId;

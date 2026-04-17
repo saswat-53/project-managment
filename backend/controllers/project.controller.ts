@@ -9,6 +9,7 @@ import {
   workspaceIdParamSchema,
 } from "../validators/project.validator";
 import { getUserWorkspaceRole } from "../utils/workspaceRole";
+import { encrypt } from "../utils/crypto";
 import {
   sendProjectAddedEmail,
   sendRemovedFromProjectEmail,
@@ -63,7 +64,7 @@ export const createProject = async (req: Request, res: Response) => {
       });
     }
 
-    const { name, description, workspaceId, members, status } = validation.data;
+    const { name, description, repoUrl, githubToken, workspaceId, members, status } = validation.data;
     const userId = (req as any).user._id;
 
     // Check if workspace exists
@@ -106,6 +107,8 @@ export const createProject = async (req: Request, res: Response) => {
     const project = await Project.create({
       name,
       description,
+      repoUrl: repoUrl || undefined,
+      githubToken: githubToken ? encrypt(githubToken) : undefined,
       workspace: new mongoose.Types.ObjectId(workspaceId),
       members: memberObjectIds,
       status: status || "backlog",
@@ -126,9 +129,12 @@ export const createProject = async (req: Request, res: Response) => {
       });
     }
 
+    const projectObj = project.toObject();
+    delete (projectObj as any).githubToken;
+
     return res.status(201).json({
       message: "Project created successfully",
-      project,
+      project: projectObj,
     });
   } catch (error) {
     console.error("Create project error:", error);
@@ -192,7 +198,13 @@ export const getProjectsByWorkspace = async (req: Request, res: Response) => {
       .populate("members", "name email")
       .populate("workspace", "name");
 
-    return res.status(200).json({ projects });
+    const safeProjects = projects.map((p) => {
+      const obj = p.toObject();
+      delete (obj as any).githubToken;
+      return obj;
+    });
+
+    return res.status(200).json({ projects: safeProjects });
   } catch (error) {
     console.error("Get projects error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -254,7 +266,10 @@ export const getProjectById = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    return res.status(200).json({ project });
+    const projectObj = project.toObject();
+    delete (projectObj as any).githubToken;
+
+    return res.status(200).json({ project: projectObj });
   } catch (error) {
     console.error("Get project error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -317,7 +332,7 @@ export const updateProject = async (req: Request, res: Response) => {
     }
 
     const { projectId } = paramValidation.data;
-    const { name, description, status, members } = bodyValidation.data;
+    const { name, description, repoUrl, githubToken, status, members } = bodyValidation.data;
     const userId = (req as any).user._id;
 
     const project = await Project.findById(projectId).populate("workspace");
@@ -342,6 +357,8 @@ export const updateProject = async (req: Request, res: Response) => {
     const workspaceMemberIds = workspace.members.map((id: any) => id.toString());
     if (name !== undefined) project.name = name;
     if (description !== undefined) project.description = description;
+    if (repoUrl !== undefined) project.repoUrl = repoUrl || undefined;
+    if (githubToken !== undefined) project.githubToken = githubToken ? encrypt(githubToken) : undefined;
     if (status !== undefined) project.status = status;
 
     if (Array.isArray(members)) {
@@ -396,9 +413,12 @@ export const updateProject = async (req: Request, res: Response) => {
     project.workspace = workspace._id;
     await project.save();
 
+    const updatedObj = project.toObject();
+    delete (updatedObj as any).githubToken;
+
     return res.status(200).json({
       message: "Project updated successfully",
-      project,
+      project: updatedObj,
     });
   } catch (error) {
     console.error("Update project error:", error);

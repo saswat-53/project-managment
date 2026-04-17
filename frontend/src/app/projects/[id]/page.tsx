@@ -9,7 +9,7 @@ import Table from "../TableView";
 import ModalNewTask from "@/components/ModalNewTask";
 import ModalAddMember from "@/components/ModalAddMember";
 import DashboardWrapper from "@/app/dashboardWrapper";
-import { useGetTasksQuery, useGetCurrentUserQuery, useGetWorkspaceMembersQuery } from "@/state/api";
+import { useGetTasksQuery, useGetCurrentUserQuery, useGetWorkspaceMembersQuery, useGetProjectByIdQuery } from "@/state/api";
 import { useAppSelector } from "@/app/redux";
 import { useProjectSocket } from "@/hooks/useProjectSocket";
 
@@ -34,6 +34,7 @@ const Project = ({ params }: Props) => {
   const myWorkspaceRole = workspaceMembers?.find(m => m._id === currentUser?._id)?.workspaceRole;
   const canManage = myWorkspaceRole === "admin" || myWorkspaceRole === "manager";
 
+  const { data: project } = useGetProjectByIdQuery(id, { skip: !id });
   const { isLoading, error } = useGetTasksQuery({ projectId: id });
 
   const taskError = (() => {
@@ -66,6 +67,7 @@ const Project = ({ params }: Props) => {
         onAddMember={canManage ? () => setIsModalAddMemberOpen(true) : undefined}
         projectId={id}
         canManage={canManage}
+        project={project}
       />
 
       {isLoading && (

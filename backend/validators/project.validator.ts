@@ -18,6 +18,8 @@ import { z } from "zod";
 export const createProjectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
   description: z.string().optional(),
+  repoUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
+  githubToken: z.string().optional(),
   workspaceId: z.string().min(1, "Workspace ID is required"),
   members: z.array(z.string()).optional(),
   status: z.enum(["backlog", "in-progress", "completed"]).optional(),
@@ -30,6 +32,8 @@ export const createProjectSchema = z.object({
 export const updateProjectSchema = z.object({
   name: z.string().min(1, "Project name cannot be empty").optional(),
   description: z.string().optional(),
+  repoUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
+  githubToken: z.string().optional(),
   status: z.enum(["backlog", "in-progress", "completed"]).optional(),
   members: z.array(z.string()).optional(),
 });
