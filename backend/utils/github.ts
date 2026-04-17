@@ -34,8 +34,8 @@ function githubHeaders(token?: string): Record<string, string> {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
   };
-  const resolved = token || process.env.GITHUB_TOKEN;
-  if (resolved) {
+  const resolved = token || process.env.GITHUB_TOKEN || undefined;
+  if (resolved && resolved.trim()) {
     headers.Authorization = `Bearer ${resolved}`;
   }
   return headers;
