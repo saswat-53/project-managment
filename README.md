@@ -17,6 +17,7 @@ A full-stack project management application with real-time updates, role-based a
 - **Dark Mode** — System-wide dark mode toggle, persisted across sessions
 - **Task Comments & Replies** — Threaded 2-level comment system with inline edit, reply toggle, and permission-based delete
 - **File Attachments (Cloudflare R2)** — Upload files directly to R2 via presigned URLs; attachments stored per-task with metadata
+- **AI Task Plan Generation** — DeepSeek-powered two-pass LLM that reads your linked GitHub repo, selects relevant files, and generates a structured `plan.md` per task; cached on the task and re-generatable on demand
 
 ### Project Views
 | View | Description |
@@ -150,6 +151,11 @@ R2_ACCESS_KEY_ID=your_r2_access_key_id
 R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
 R2_BUCKET_NAME=your_r2_bucket_name
 R2_PUBLIC_URL=https://pub-xxxx.r2.dev
+
+# AI Plan Generation (DeepSeek + GitHub)
+DEEPSEEK_API_KEY=your_deepseek_api_key
+GITHUB_TOKEN=your_github_pat_with_repo_scope
+ENCRYPTION_KEY=64_hex_chars_run_node_e_console_log_crypto_randomBytes_32_toString_hex
 ```
 
 Start the backend:
@@ -201,6 +207,7 @@ http://localhost:5000/api-docs
 | Tasks | `/api/task` | CRUD, status/priority updates |
 | Attachments | `/api/task/:id/attachments` | Get presigned upload URL, delete attachment |
 | Comments | `/api/task/:id/comments` | Add/edit/delete comment, add/delete reply |
+| AI Plan | `/api/task/:id/generate-plan` | Generate / regenerate DeepSeek plan for a task |
 | Health | `/health` | Server + DB liveness check |
 
 **Auth**: All protected routes use HTTP-only cookie-based JWT. Include `credentials: "include"` in all API requests.
@@ -242,8 +249,12 @@ Emails are sent via the [Resend](https://resend.com) API for:
 | `R2_SECRET_ACCESS_KEY` | Yes* | R2 API token secret |
 | `R2_BUCKET_NAME` | Yes* | R2 bucket name |
 | `R2_PUBLIC_URL` | Yes* | Public R2 domain (e.g. `https://pub-xxxx.r2.dev`) |
+| `DEEPSEEK_API_KEY` | Yes** | DeepSeek API key for AI plan generation |
+| `GITHUB_TOKEN` | Yes** | GitHub PAT with `repo` scope (server-level fallback; per-project tokens take priority) |
+| `ENCRYPTION_KEY` | Yes** | 64 hex chars (32 bytes) — encrypts per-project GitHub PATs at rest |
 
 *Required only if using file attachments. Omit to disable the feature.
+**Required only if using AI plan generation. Omit to disable the feature.
 
 ### Frontend
 
@@ -266,6 +277,8 @@ Emails are sent via the [Resend](https://resend.com) API for:
 **Presigned Upload Pattern (R2)** — File uploads bypass the Node.js server entirely. The backend generates a short-lived presigned PUT URL (5 min), the browser uploads directly to Cloudflare R2, and only the metadata (`key`, `fileName`, `fileSize`, `url`) is saved to MongoDB. This keeps the API server stateless and avoids large payload handling.
 
 **Embedded Comments Subdocument** — Task comments are stored as an embedded array inside the Task document (not a separate collection). This keeps reads fast (no joins) and works well given the bounded size of comment threads per task.
+
+**Two-Pass AI Plan Generation** — Plan generation runs two sequential DeepSeek calls: the first selects only the relevant files from the repo tree (avoiding token limits), the second generates the structured `plan.md` using just those files' contents. The result is cached on the Task document (`planMarkdown`, `planGeneratedAt`) so re-opening the plan tab is instant. An in-memory rate limiter (10 requests/hr/user) protects the DeepSeek API quota without requiring Redis.
 
 ---
 
