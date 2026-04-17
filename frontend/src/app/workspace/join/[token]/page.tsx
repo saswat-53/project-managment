@@ -9,11 +9,11 @@ import { setActiveWorkspaceId, setIsDarkMode } from "@/state";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 
 type Props = {
-  params: Promise<{ token: string }>;
+  params: { token: string };
 };
 
 export default function JoinWorkspacePage({ params }: Props) {
-  const { token } = React.use(params);
+  const { token } = params;
   const router = useRouter();
   const dispatch = useAppDispatch();
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
