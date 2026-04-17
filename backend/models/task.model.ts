@@ -41,6 +41,7 @@ export interface ITask extends Document {
   attachments: IAttachment[];
   planMarkdown?: string;
   planGeneratedAt?: Date;
+  planDuration?: number;
   planUrl?: string;
 }
 
@@ -137,6 +138,10 @@ const taskSchema = new Schema<ITask>(
 
     planGeneratedAt: {
       type: Date,
+    },
+
+    planDuration: {
+      type: Number,
     },
 
     planUrl: {

@@ -3,7 +3,6 @@
 import { useAppSelector } from "@/app/redux";
 import { useGetTasksQuery } from "@/state/api";
 import { DisplayOption, Gantt, ViewMode } from "gantt-task-react";
-import "gantt-task-react/dist/index.css";
 import React, { useMemo, useState } from "react";
 
 type Props = {
@@ -142,9 +141,9 @@ const Timeline = ({ id, setIsModalNewTaskOpen }: Props) => {
                   ? 120
                   : 60
               }
-              listCellWidth="160px"
-              rowHeight={44}
-              headerHeight={50}
+              listCellWidth="150px"
+              rowHeight={56}
+              headerHeight={60}
               barCornerRadius={4}
               barFill={72}
               fontSize="13px"
