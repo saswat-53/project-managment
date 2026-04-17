@@ -21,6 +21,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import Image from "next/image";
 import { CornerDownRight, Pencil, Trash2, User as UserIcon, Paperclip, FileText, FileImage, File, X, Upload } from "lucide-react";
+import TaskPlanViewer from "@/components/TaskPlanViewer";
+
+type Tab = "details" | "plan" | "files" | "chat";
 
 type Props = {
   isOpen: boolean;
@@ -50,6 +53,8 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
 
   const myRole = members?.find((m) => m._id === currentUser?._id)?.workspaceRole;
   const canModerate = myRole === "admin" || myRole === "manager";
+
+  const [activeTab, setActiveTab] = useState<Tab>("details");
 
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
@@ -184,70 +189,114 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
   const selectStyles =
     "mb-4 block w-full rounded border border-gray-300 px-3 py-2 dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none";
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} name="Edit Task" size="md">
-      <form
-        className="mt-4 space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSubmit();
-        }}
-      >
-        <input
-          type="text"
-          className={inputStyles}
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <textarea
-          className={inputStyles}
-          placeholder="Description"
-          rows={4}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <select
-          className={selectStyles}
-          value={status}
-          onChange={(e) =>
-            setStatus(e.target.value as "todo" | "in-progress" | "done")
-          }
-        >
-          <option value="todo">To Do</option>
-          <option value="in-progress">In Progress</option>
-          <option value="done">Done</option>
-        </select>
-        <input
-          type="date"
-          className={inputStyles}
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-        />
-        <select
-          className={selectStyles}
-          value={assignedTo}
-          onChange={(e) => setAssignedTo(e.target.value)}
-        >
-          <option value="">Unassigned</option>
-          {members?.map((member) => (
-            <option key={member._id} value={member._id}>
-              {member.name} ({member.workspaceRole})
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          className={`focus-offset-2 mt-4 flex w-full justify-center rounded-md border border-transparent bg-amber-400 px-4 py-2 text-base font-medium text-zinc-950 shadow-sm hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 ${
-            !title || isLoading ? "cursor-not-allowed opacity-50" : ""
-          }`}
-          disabled={!title || isLoading}
-        >
-          {isLoading ? "Saving..." : "Save Changes"}
-        </button>
+  const tabs = [
+    { id: "details" as Tab, label: "Details" },
+    { id: "plan" as Tab, label: "Plan" },
+    {
+      id: "files" as Tab,
+      label: `Files${task.attachments?.length ? ` (${task.attachments.length})` : ""}`,
+    },
+    {
+      id: "chat" as Tab,
+      label: `Chat${task.comments?.length ? ` (${task.comments.length})` : ""}`,
+    },
+  ];
 
-        {/* Attachments */}
-        <div className="border-t border-gray-200 pt-4 dark:border-stroke-dark">
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} name="Edit Task" size="md" maxHeight="85vh">
+      {/* Tab bar */}
+      <div className="mb-4 mt-2 flex gap-1 border-b border-gray-200 dark:border-stroke-dark">
+        {tabs.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setActiveTab(id)}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === id
+                ? "border-b-2 border-blue-primary text-blue-primary"
+                : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Fixed-height content area — prevents modal from resizing on tab switch */}
+      <div className="min-h-[520px] overflow-y-auto">
+
+      {/* Details tab */}
+      {activeTab === "details" && (
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+        >
+          <input
+            type="text"
+            className={inputStyles}
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <textarea
+            className={inputStyles}
+            placeholder="Description"
+            rows={4}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <select
+            className={selectStyles}
+            value={status}
+            onChange={(e) =>
+              setStatus(e.target.value as "todo" | "in-progress" | "done")
+            }
+          >
+            <option value="todo">To Do</option>
+            <option value="in-progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+          <input
+            type="date"
+            className={inputStyles}
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
+          <select
+            className={selectStyles}
+            value={assignedTo}
+            onChange={(e) => setAssignedTo(e.target.value)}
+          >
+            <option value="">Unassigned</option>
+            {members?.map((member) => (
+              <option key={member._id} value={member._id}>
+                {member.name} ({member.workspaceRole})
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className={`focus-offset-2 mt-4 flex w-full justify-center rounded-md border border-transparent bg-amber-400 px-4 py-2 text-base font-medium text-zinc-950 shadow-sm hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 ${
+              !title || isLoading ? "cursor-not-allowed opacity-50" : ""
+            }`}
+            disabled={!title || isLoading}
+          >
+            {isLoading ? "Saving..." : "Save Changes"}
+          </button>
+        </form>
+      )}
+
+      {/* Plan tab */}
+      {activeTab === "plan" && (
+        <TaskPlanViewer task={task} canModerate={canModerate} />
+      )}
+
+      {/* Files tab */}
+      {activeTab === "files" && (
+        <div>
           <div className="mb-3 flex items-center justify-between">
             <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300">
               <Paperclip size={14} />
@@ -330,14 +379,15 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
             <p className="text-xs text-gray-400 dark:text-neutral-500">No attachments yet.</p>
           )}
         </div>
+      )}
 
-        {/* Comments */}
-        <div className="border-t border-gray-200 pt-4 dark:border-stroke-dark">
+      {/* Chat tab */}
+      {activeTab === "chat" && (
+        <div>
           <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
             Comments {task.comments?.length ? `(${task.comments.length})` : ""}
           </h3>
 
-          {/* Existing comments */}
           {task.comments && task.comments.length > 0 ? (
             <div className="mb-4 space-y-3 max-h-60 overflow-y-auto pr-1">
               {task.comments.map((comment) => {
@@ -369,7 +419,6 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
                             {format(new Date(comment.createdAt), "MMM d, h:mm a")}
                           </span>
                         </div>
-                        {/* Edit/Delete — only shown for own comments (delete also shown via canManage check on server) */}
                         {isOwn && !isEditing && (
                           <div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 hover:opacity-100">
                             <button
@@ -390,7 +439,6 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
                             </button>
                           </div>
                         )}
-                        {/* Admins/managers can delete others' comments too */}
                         {!isOwn && !isEditing && canModerate && (
                           <button
                             type="button"
@@ -437,7 +485,6 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
                             {comment.text}
                           </p>
 
-                          {/* Reply button */}
                           <button
                             type="button"
                             onClick={() => {
@@ -450,7 +497,6 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
                             {replyingToCommentId === comment._id ? "Cancel" : "Reply"}
                           </button>
 
-                          {/* Inline reply input */}
                           {replyingToCommentId === comment._id && (
                             <div className="mt-2 flex gap-1.5">
                               <input
@@ -476,7 +522,6 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
                             </div>
                           )}
 
-                          {/* Replies */}
                           {comment.replies && comment.replies.length > 0 && (
                             <div className="mt-2 space-y-2 border-l-2 border-gray-100 pl-3 dark:border-stroke-dark">
                               {comment.replies.map((reply) => {
@@ -539,7 +584,6 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
             <p className="mb-4 text-xs text-gray-400 dark:text-neutral-500">No comments yet.</p>
           )}
 
-          {/* Add comment */}
           <div className="flex gap-2">
             <input
               type="text"
@@ -561,7 +605,9 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
             </button>
           </div>
         </div>
-      </form>
+      )}
+
+      </div>{/* end fixed-height content area */}
     </Modal>
   );
 };

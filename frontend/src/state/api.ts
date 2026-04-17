@@ -35,6 +35,7 @@ export interface Project {
   name: string;
   description?: string;
   status: "backlog" | "in-progress" | "completed";
+  repoUrl?: string;
   workspace: string;
   members: string[];
 }
@@ -77,6 +78,8 @@ export interface Task {
   createdBy?: User;
   comments?: Comment[];
   attachments?: Attachment[];
+  planMarkdown?: string;
+  planGeneratedAt?: string;
 }
 
 export interface AuthResponse {
@@ -175,14 +178,22 @@ export const api = createApi({
     }),
     createProject: build.mutation<
       { message: string; project: Project },
-      { name: string; description?: string; workspaceId: string }
+      { name: string; description?: string; repoUrl?: string; githubToken?: string; workspaceId: string }
     >({
       query: (body) => ({ url: "project/projects", method: "POST", body }),
       invalidatesTags: ["Projects"],
     }),
     updateProject: build.mutation<
       { message: string; project: Project },
-      { projectId: string; members: string[] }
+      {
+        projectId: string;
+        name?: string;
+        description?: string;
+        status?: "backlog" | "in-progress" | "completed";
+        repoUrl?: string;
+        githubToken?: string;
+        members?: string[];
+      }
     >({
       query: ({ projectId, ...body }) => ({
         url: `project/${projectId}`,
@@ -442,6 +453,21 @@ export const api = createApi({
         { type: "Tasks", id: taskId },
       ],
     }),
+
+    // AI Plan generation
+    generateTaskPlan: build.mutation<
+      { message: string; task: Task },
+      { taskId: string }
+    >({
+      query: ({ taskId }) => ({
+        url: `task/${taskId}/generate-plan`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+        "Projects",
+      ],
+    }),
   }),
 });
 
@@ -483,4 +509,5 @@ export const {
   useGetPresignedUploadUrlMutation,
   useConfirmAttachmentUploadMutation,
   useDeleteTaskAttachmentMutation,
+  useGenerateTaskPlanMutation,
 } = api;

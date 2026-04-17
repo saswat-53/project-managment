@@ -39,6 +39,9 @@ export interface ITask extends Document {
   dueDate?: Date;
   comments: IComment[];
   attachments: IAttachment[];
+  planMarkdown?: string;
+  planGeneratedAt?: Date;
+  planUrl?: string;
 }
 
 // Reply schema — same shape as a comment but intentionally has no `replies` field
@@ -127,6 +130,18 @@ const taskSchema = new Schema<ITask>(
       type: [attachmentSchema],
       default: [],
     },
+
+    planMarkdown: {
+      type: String,
+    },
+
+    planGeneratedAt: {
+      type: Date,
+    },
+
+    planUrl: {
+      type: String,
+    },
   },
   { timestamps: true }
 );
@@ -146,14 +161,23 @@ taskSchema.index({ workspace: 1 });
  * Pre-delete hook (document context)
  * Triggered when: await task.deleteOne()
  * Context: 'this' is the task document being deleted
- * Action: Removes task from project.tasks array
+ * Action: Removes task from project.tasks array + deletes all R2 objects (attachments + plan)
  */
 taskSchema.pre("deleteOne", { document: true, query: false }, async function () {
   const { Project } = await import("./project.model");
-
-  // console.log(`[Task Hook] Removing task ${this._id} from project`);
+  const { deleteR2Object } = await import("../utils/r2");
 
   await Project.updateOne({ _id: this.project }, { $pull: { tasks: this._id } });
+
+  // Delete all file attachments from R2
+  const r2Deletes = this.attachments.map((a) => deleteR2Object(a.key).catch(() => {}));
+
+  // Delete the AI plan markdown from R2 if it was uploaded
+  if (this.planUrl) {
+    r2Deletes.push(deleteR2Object(`plans/${this._id}.md`).catch(() => {}));
+  }
+
+  await Promise.all(r2Deletes);
 });
 
 /**
@@ -186,10 +210,18 @@ taskSchema.pre("deleteOne", { document: false, query: true }, async function () 
  */
 taskSchema.pre("deleteMany", async function () {
   const { Task } = await import("./task.model");
+  const { deleteR2Object } = await import("../utils/r2");
 
   const filter = this.getFilter();
-  const tasks = await Task.find(filter as any);
-  // console.log(`[Task Hook] Bulk deleting ${tasks.length} tasks`);
+  const tasks = await Task.find(filter as any).select("attachments planUrl _id");
+
+  // Delete all R2 objects for every task being bulk-deleted
+  const r2Deletes = tasks.flatMap((task) => [
+    ...task.attachments.map((a) => deleteR2Object(a.key).catch(() => {})),
+    ...(task.planUrl ? [deleteR2Object(`plans/${task._id}.md`).catch(() => {})] : []),
+  ]);
+
+  await Promise.all(r2Deletes);
 
   // Project cleanup handled by caller to avoid N queries
 });

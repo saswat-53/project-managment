@@ -16,16 +16,24 @@ const ModalNewProject = ({ isOpen, onClose }: Props) => {
 
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
+  const [repoUrl, setRepoUrl] = useState("");
+  const [githubToken, setGithubToken] = useState("");
+  const [showTokenField, setShowTokenField] = useState(false);
 
   const handleSubmit = async () => {
     if (!projectName || !activeWorkspaceId) return;
     await createProject({
       name: projectName,
       description,
+      repoUrl: repoUrl || undefined,
+      githubToken: githubToken || undefined,
       workspaceId: activeWorkspaceId,
     });
     setProjectName("");
     setDescription("");
+    setRepoUrl("");
+    setGithubToken("");
+    setShowTokenField(false);
     onClose();
   };
 
@@ -56,6 +64,40 @@ const ModalNewProject = ({ isOpen, onClose }: Props) => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+        <input
+          type="url"
+          className={inputStyles}
+          placeholder="GitHub repo URL (optional, e.g. https://github.com/org/repo)"
+          value={repoUrl}
+          onChange={(e) => {
+            setRepoUrl(e.target.value);
+            if (!e.target.value) {
+              setShowTokenField(false);
+              setGithubToken("");
+            }
+          }}
+        />
+        {repoUrl && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowTokenField((v) => !v)}
+              className="mb-2 text-xs text-amber-600 hover:text-amber-500 dark:text-amber-400 dark:hover:text-amber-300"
+            >
+              {showTokenField ? "Hide" : "+ Add"} GitHub token (required for private repos)
+            </button>
+            {showTokenField && (
+              <input
+                type="password"
+                className={inputStyles}
+                placeholder="GitHub PAT (ghp_…)"
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                autoComplete="off"
+              />
+            )}
+          </div>
+        )}
         <button
           type="submit"
           className={`focus-offset-2 mt-4 flex w-full justify-center rounded-md border border-transparent bg-amber-400 px-4 py-2 text-base font-medium text-zinc-950 shadow-sm hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 ${

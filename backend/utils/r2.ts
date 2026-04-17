@@ -45,3 +45,21 @@ export const deleteR2Object = async (key: string): Promise<void> => {
 export const getPublicUrl = (key: string): string => {
   return `${process.env.R2_PUBLIC_URL}/${key}`;
 };
+
+/**
+ * Uploads a buffer directly from the server to R2 (no presigned URL needed).
+ * Used for server-generated files like AI plan markdown.
+ */
+export const uploadBuffer = async (
+  key: string,
+  body: Buffer | string,
+  contentType: string
+): Promise<void> => {
+  const command = new PutObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME!,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  });
+  await r2Client.send(command);
+};
