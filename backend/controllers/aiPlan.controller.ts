@@ -127,6 +127,8 @@ export const generateTaskPlan = async (req: Request, res: Response) => {
       return res.status(502).json({ message: "Failed to fetch repository tree." });
     }
 
+    const generationStart = Date.now();
+
     // 7. Pass 1 — select relevant files
     const selectedPaths = await selectRelevantFiles(task, project, fileTree);
 
@@ -162,6 +164,7 @@ export const generateTaskPlan = async (req: Request, res: Response) => {
     // 12. Save to task
     task.planMarkdown = markdown;
     task.planGeneratedAt = new Date();
+    task.planDuration = Math.round((Date.now() - generationStart) / 1000);
     await task.save();
 
     // 13. Populate for socket emit

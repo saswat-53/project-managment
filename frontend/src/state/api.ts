@@ -80,6 +80,7 @@ export interface Task {
   attachments?: Attachment[];
   planMarkdown?: string;
   planGeneratedAt?: string;
+  planDuration?: number;
 }
 
 export interface AuthResponse {

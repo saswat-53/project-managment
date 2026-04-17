@@ -20,6 +20,13 @@ const TaskPlanViewer = ({ task, canModerate }: Props) => {
   const [updateProject, { isLoading: isSavingRepo }] = useUpdateProjectMutation();
   const [error, setError] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  const formatElapsed = (s: number) => {
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return rem === 0 ? `${m}m` : `${m}m ${rem}s`;
+  };
   // Inline fix form state
   const [showRepoForm, setShowRepoForm] = useState(false);
   const [repoFormMode, setRepoFormMode] = useState<"no_repo" | "no_token">("no_repo");
@@ -106,6 +113,9 @@ const TaskPlanViewer = ({ task, canModerate }: Props) => {
               {formatDistanceToNow(new Date(task.planGeneratedAt), {
                 addSuffix: true,
               })}
+              {task.planDuration != null && (
+                <> · took {formatElapsed(task.planDuration)}</>
+              )}
             </span>
           )}
         </div>
@@ -131,7 +141,7 @@ const TaskPlanViewer = ({ task, canModerate }: Props) => {
               {isLoading ? (
                 <>
                   <Loader2 size={12} className="animate-spin" />
-                  Generating… {elapsedSeconds}s
+                  Generating… {formatElapsed(elapsedSeconds)}
                 </>
               ) : hasPlan ? (
                 <>
@@ -217,7 +227,7 @@ const TaskPlanViewer = ({ task, canModerate }: Props) => {
       {isLoading ? (
         <div className="flex h-48 flex-col items-center justify-center gap-3 text-gray-400 dark:text-neutral-500">
           <Loader2 size={28} className="animate-spin" />
-          <p className="text-sm">Generating plan… {elapsedSeconds}s</p>
+          <p className="text-sm">Generating plan… {formatElapsed(elapsedSeconds)}</p>
           <p className="text-xs text-gray-300 dark:text-neutral-600">
             Analysing your repository and writing the implementation plan
           </p>
