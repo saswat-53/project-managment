@@ -185,9 +185,9 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
   };
 
   const inputStyles =
-    "w-full rounded border border-gray-300 p-2 shadow-sm dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none";
+    "w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring";
   const selectStyles =
-    "mb-4 block w-full rounded border border-gray-300 px-3 py-2 dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none";
+    "block w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring";
 
   const tabs = [
     { id: "details" as Tab, label: "Details" },
@@ -205,7 +205,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} name="Edit Task" size="md" maxHeight="85vh">
       {/* Tab bar */}
-      <div className="mb-4 mt-2 flex gap-1 border-b border-gray-200 dark:border-stroke-dark">
+      <div className="mb-4 mt-2 flex gap-1 border-b border-border">
         {tabs.map(({ id, label }) => (
           <button
             key={id}
@@ -213,8 +213,8 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
             onClick={() => setActiveTab(id)}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === id
-                ? "border-b-2 border-blue-primary text-blue-primary"
-                : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
+                ? "border-b-2 border-amber-400 text-amber-500 dark:text-amber-400"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {label}
@@ -279,7 +279,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
           </select>
           <button
             type="submit"
-            className={`focus-offset-2 mt-4 flex w-full justify-center rounded-md border border-transparent bg-amber-400 px-4 py-2 text-base font-medium text-zinc-950 shadow-sm hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 ${
+            className={`mt-4 flex w-full justify-center rounded-md bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 ${
               !title || isLoading ? "cursor-not-allowed opacity-50" : ""
             }`}
             disabled={!title || isLoading}
@@ -455,7 +455,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
                         <div className="mt-1 flex gap-1.5">
                           <input
                             type="text"
-                            className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none"
+                            className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                             value={editingCommentText}
                             onChange={(e) => setEditingCommentText(e.target.value)}
                             onKeyDown={(e) => {
@@ -501,7 +501,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
                             <div className="mt-2 flex gap-1.5">
                               <input
                                 type="text"
-                                className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none"
+                                className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                                 placeholder={`Reply to ${comment.author.name}…`}
                                 value={replyText}
                                 onChange={(e) => setReplyText(e.target.value)}
@@ -587,7 +587,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
           <div className="flex gap-2">
             <input
               type="text"
-              className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-sm dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none"
+              className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               placeholder="Write a comment…"
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}

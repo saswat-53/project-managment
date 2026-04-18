@@ -18,14 +18,6 @@ export default function VerifyEmailPage() {
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
-
-  useEffect(() => {
     if (token && !called.current) {
       called.current = true;
       verifyEmail(token);

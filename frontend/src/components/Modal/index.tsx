@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import Header from "../Header";
 import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Props = {
   children: React.ReactNode;
@@ -22,26 +22,26 @@ const Modal = ({ children, isOpen, onClose, name, size = "md", maxHeight = "90vh
   if (!isOpen) return null;
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-50 flex h-full w-full items-center justify-center bg-gray-600 bg-opacity-50 p-4">
+    <div className="fixed inset-0 z-50 flex h-full w-full items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div
-        className={`flex w-full ${SIZE_CLASSES[size]} flex-col rounded-lg bg-white shadow-lg dark:bg-dark-secondary`}
+        className={cn(
+          "flex w-full flex-col rounded-xl border border-border bg-card shadow-xl",
+          SIZE_CLASSES[size],
+        )}
         style={{ maxHeight }}
       >
-        <div className="flex-shrink-0 p-4 pb-0">
-          <Header
-            name={name}
-            buttonComponent={
-              <button
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-zinc-950 hover:bg-amber-300"
-                onClick={onClose}
-              >
-                <X size={18} />
-              </button>
-            }
-            isSmallText
-          />
+        {/* Header */}
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-sm font-semibold text-foreground">{name}</h2>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <X size={16} />
+          </button>
         </div>
-        <div className="overflow-y-auto p-4 pt-0">{children}</div>
+        {/* Body */}
+        <div className="overflow-y-auto px-5 py-4">{children}</div>
       </div>
     </div>,
     document.body,

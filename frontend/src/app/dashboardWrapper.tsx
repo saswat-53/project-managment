@@ -7,9 +7,7 @@ import AuthProvider from "./authProvider";
 import { useAppSelector } from "./redux";
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-  const isSidebarCollapsed = useAppSelector(
-    (state) => state.global.isSidebarCollapsed,
-  );
+  const isSidebarCollapsed = useAppSelector((state) => state.global.isSidebarCollapsed);
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   useEffect(() => {
@@ -21,16 +19,18 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   });
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-50 text-gray-900 dark:bg-dark-bg dark:text-white">
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       <Sidebar />
-      <main
-        className={`flex w-full flex-col bg-gray-50 dark:bg-dark-bg ${
+      <div
+        className={`flex h-screen w-full flex-col transition-all duration-300 ${
           isSidebarCollapsed ? "" : "md:pl-64"
         }`}
       >
         <Navbar />
-        {children}
-      </main>
+        <main className="flex-1 overflow-y-auto bg-background">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

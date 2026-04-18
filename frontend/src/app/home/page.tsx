@@ -7,7 +7,8 @@ import { DataGrid } from "@mui/x-data-grid";
 import Header from "@/components/Header";
 import { dataGridClassNames, dataGridSxStyles } from "@/lib/utils";
 import ModalNewProject from "@/app/projects/ModalNewProject";
-import { PlusSquare } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CheckCircle2, Circle, Clock, Layers, PlusSquare } from "lucide-react";
 
 const ProjectTaskLoader = ({
   projectId,
@@ -23,17 +24,35 @@ const ProjectTaskLoader = ({
   return null;
 };
 
-const TASK_STATUS_COLORS: Record<string, string> = {
-  todo: "#FFBB28",
-  "in-progress": "#0088FE",
-  done: "#00C49F",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  todo: "To Do",
-  "in-progress": "In Progress",
-  done: "Done",
-};
+const TASK_STATUS_CONFIG = [
+  {
+    key: "todo" as const,
+    label: "To Do",
+    icon: Circle,
+    color: "text-amber-500",
+    bg: "bg-amber-50 dark:bg-amber-500/10",
+    border: "border-amber-200 dark:border-amber-500/20",
+    bar: "bg-amber-400",
+  },
+  {
+    key: "in-progress" as const,
+    label: "In Progress",
+    icon: Clock,
+    color: "text-blue-500",
+    bg: "bg-blue-50 dark:bg-blue-500/10",
+    border: "border-blue-200 dark:border-blue-500/20",
+    bar: "bg-blue-400",
+  },
+  {
+    key: "done" as const,
+    label: "Done",
+    icon: CheckCircle2,
+    color: "text-emerald-500",
+    bg: "bg-emerald-50 dark:bg-emerald-500/10",
+    border: "border-emerald-200 dark:border-emerald-500/20",
+    bar: "bg-emerald-400",
+  },
+];
 
 const HomePage = () => {
   const [tasksByProject, setTasksByProject] = useState<Record<string, Task[]>>({});
@@ -59,7 +78,6 @@ const HomePage = () => {
   if (!projects) return <div>No data available</div>;
 
   const allTasks = Object.values(tasksByProject).flat();
-
   const taskStatusCount = allTasks.reduce((acc: Record<string, number>, task) => {
     const status = task.status || "todo";
     acc[status] = (acc[status] || 0) + 1;
@@ -67,7 +85,7 @@ const HomePage = () => {
   }, {});
 
   return (
-    <div className="h-full w-full bg-transparent p-8">
+    <div className="h-full w-full p-6 space-y-6">
       {projects.map((project) => (
         <ProjectTaskLoader
           key={project._id}
@@ -76,90 +94,104 @@ const HomePage = () => {
         />
       ))}
 
-      <Header name="Project Management Dashboard" />
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <Header name="Dashboard" />
 
-        {/* Task Status Summary Cards */}
-        {(["todo", "in-progress", "done"] as const).map((status) => (
+      {/* STAT CARDS */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {TASK_STATUS_CONFIG.map(({ key, label, icon: Icon, color, bg, border, bar }) => (
           <div
-            key={status}
-            className="flex items-center gap-4 rounded-lg bg-white p-5 shadow dark:bg-dark-secondary"
+            key={key}
+            className={cn(
+              "relative overflow-hidden rounded-xl border p-5 shadow-sm",
+              bg,
+              border,
+            )}
           >
-            <div
-              className="h-12 w-1.5 rounded-full"
-              style={{ backgroundColor: TASK_STATUS_COLORS[status] }}
-            />
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {STATUS_LABELS[status]}
-              </p>
-              <p className="text-3xl font-bold dark:text-white">
-                {taskStatusCount[status] || 0}
-              </p>
+            <div className={cn("absolute left-0 top-0 h-full w-1 rounded-r-full", bar)} />
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">{label}</p>
+                <p className="mt-1.5 text-3xl font-bold text-foreground">
+                  {taskStatusCount[key] ?? 0}
+                </p>
+              </div>
+              <div className={cn("rounded-lg p-2", bg)}>
+                <Icon className={cn("h-5 w-5", color)} />
+              </div>
             </div>
           </div>
         ))}
 
-        {/* Total Tasks Card */}
-        <div className="flex items-center gap-4 rounded-lg bg-white p-5 shadow dark:bg-dark-secondary">
-          <div className="h-12 w-1.5 rounded-full bg-gray-400 dark:bg-gray-500" />
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Total Tasks</p>
-            <p className="text-3xl font-bold dark:text-white">{allTasks.length}</p>
+        {/* Total */}
+        <div className="relative overflow-hidden rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div className="absolute left-0 top-0 h-full w-1 rounded-r-full bg-slate-400" />
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Total Tasks</p>
+              <p className="mt-1.5 text-3xl font-bold text-foreground">{allTasks.length}</p>
+            </div>
+            <div className="rounded-lg bg-muted p-2">
+              <Layers className="h-5 w-5 text-muted-foreground" />
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Projects Table */}
-        <div className="rounded-lg bg-white p-4 shadow dark:bg-dark-secondary md:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold dark:text-white">
-              Projects ({projects.length})
-            </h3>
-            {projects.length > 0 && canManage && (
+      {/* PROJECTS TABLE */}
+      <div className="rounded-xl border border-border bg-card shadow-sm">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+          <h3 className="text-sm font-semibold text-foreground">
+            Projects
+            <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              {projects.length}
+            </span>
+          </h3>
+          {projects.length > 0 && canManage && (
+            <button
+              onClick={() => setIsModalNewProjectOpen(true)}
+              className="flex items-center gap-1.5 rounded-md bg-amber-400 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-amber-300 transition-colors"
+            >
+              <PlusSquare className="h-3.5 w-3.5" />
+              New Project
+            </button>
+          )}
+        </div>
+
+        {projects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-16">
+            <p className="text-sm text-muted-foreground">
+              {canManage
+                ? "No projects yet. Create your first project to get started."
+                : "No projects yet. Ask an admin or manager to create one."}
+            </p>
+            {canManage && (
               <button
                 onClick={() => setIsModalNewProjectOpen(true)}
-                className="flex items-center gap-1.5 rounded bg-amber-400 px-3 py-1.5 text-sm font-medium text-zinc-950 hover:bg-amber-300"
+                className="flex items-center gap-2 rounded-md bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-300 transition-colors"
               >
                 <PlusSquare className="h-4 w-4" />
-                New Project
+                Create First Project
               </button>
             )}
           </div>
-
-          {projects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-gray-200 py-16 dark:border-stroke-dark">
-              <p className="text-gray-400 dark:text-gray-500">
-                No projects yet.{canManage ? " Create your first project to get started." : " Ask an admin or manager to create a project."}
-              </p>
-              {canManage && (
-                <button
-                  onClick={() => setIsModalNewProjectOpen(true)}
-                  className="flex items-center gap-2 rounded bg-amber-400 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-amber-300"
-                >
-                  <PlusSquare className="h-4 w-4" />
-                  Create First Project
-                </button>
-              )}
-            </div>
-          ) : (
-            <div style={{ height: 400, width: "100%" }}>
-              <DataGrid
-                rows={projects}
-                columns={[
-                  { field: "name", headerName: "Name", width: 200 },
-                  { field: "status", headerName: "Status", width: 150 },
-                  { field: "description", headerName: "Description", width: 300 },
-                ]}
-                getRowId={(row) => row._id}
-                loading={isProjectsLoading}
-                getRowClassName={() => "data-grid-row"}
-                getCellClassName={() => "data-grid-cell"}
-                className={dataGridClassNames}
-                sx={dataGridSxStyles(isDarkMode)}
-              />
-            </div>
-          )}
-        </div>
+        ) : (
+          <div style={{ height: 400, width: "100%" }}>
+            <DataGrid
+              rows={projects}
+              columns={[
+                { field: "name", headerName: "Name", width: 200 },
+                { field: "status", headerName: "Status", width: 150 },
+                { field: "description", headerName: "Description", width: 300 },
+              ]}
+              getRowId={(row) => row._id}
+              loading={isProjectsLoading}
+              getRowClassName={() => "data-grid-row"}
+              getCellClassName={() => "data-grid-cell"}
+              className={dataGridClassNames}
+              sx={dataGridSxStyles(isDarkMode)}
+            />
+          </div>
+        )}
       </div>
 
       <ModalNewProject

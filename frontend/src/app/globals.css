@@ -12,6 +12,52 @@
   --color-bg:      39 39 42;   /* #27272a  main page backgrounds  */
   --color-surface: 63 63 70;   /* #3f3f46  cards, sidebar, modals */
   --color-border:  82 82 91;   /* #52525b  borders & dividers     */
+
+  /* shadcn/ui design tokens — light mode */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+  --radius: 0.5rem;
+  --sidebar-width: 16rem;
+}
+
+.dark {
+  /* shadcn/ui design tokens — dark mode, zinc-based to match existing palette */
+  --background: 240 5% 7%;        /* ~#111113  near-black, no blue tint */
+  --foreground: 0 0% 98%;
+  --card: 240 4% 12%;             /* ~#1d1f21  dark-secondary */
+  --card-foreground: 0 0% 98%;
+  --popover: 240 4% 12%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5% 10%;
+  --secondary: 240 4% 16%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 4% 16%;
+  --muted-foreground: 240 5% 55%;
+  --accent: 240 4% 18%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 4% 18%;           /* ~#2d3135  stroke-dark */
+  --input: 240 4% 18%;
+  --ring: 240 5% 65%;
 }
 
 *,
@@ -27,8 +73,7 @@ body,
   height: 100%;
   width: 100%;
   @apply text-sm;
-  @apply bg-white;
-  @apply dark:bg-dark-bg;
+  @apply bg-background;
 }
 
 /* TIMELINE STYLING */

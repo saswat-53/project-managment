@@ -3,11 +3,14 @@
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setActiveWorkspaceId, setIsSidebarCollapsed } from "@/state";
 import { useGetProjectsQuery, useGetWorkspacesQuery, useLogoutMutation } from "@/state/api";
+import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 import {
   Briefcase,
   ChevronDown,
   ChevronUp,
   Home,
+  LogOut,
   Settings,
   User,
   X,
@@ -21,12 +24,8 @@ const Sidebar = () => {
 
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const isSidebarCollapsed = useAppSelector(
-    (state) => state.global.isSidebarCollapsed,
-  );
-  const activeWorkspaceId = useAppSelector(
-    (state) => state.global.activeWorkspaceId,
-  );
+  const isSidebarCollapsed = useAppSelector((state) => state.global.isSidebarCollapsed);
+  const activeWorkspaceId = useAppSelector((state) => state.global.activeWorkspaceId);
 
   const { data: workspaces } = useGetWorkspacesQuery();
   const activeWorkspace = workspaces?.find((w) => w._id === activeWorkspaceId);
@@ -45,97 +44,105 @@ const Sidebar = () => {
     router.push("/login");
   };
 
-  const sidebarClassNames = `fixed flex flex-col h-[100%] justify-between shadow-xl
-    transition-all duration-300 h-full z-40 overflow-y-auto bg-white dark:bg-dark-bg
-    ${isSidebarCollapsed ? "w-0 hidden" : "w-64"}
-  `;
-
   return (
-    <div className={sidebarClassNames}>
-      <div className="flex h-[100%] w-full flex-col justify-start">
-        {/* TOP LOGO */}
-        <div className="z-50 flex min-h-[52px] w-64 items-center justify-between border-b border-gray-200 bg-white px-6 pt-3 dark:border-stroke-dark dark:bg-dark-bg">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center border-2 border-amber-400">
-              <div className="h-2.5 w-2.5 bg-amber-400" />
-            </div>
-            <span className="text-base font-bold uppercase tracking-widest text-gray-900 dark:text-white">
-              ProjectFlow
-            </span>
+    <aside
+      className={cn(
+        "fixed flex h-full flex-col border-r border-border bg-card text-card-foreground shadow-sm transition-all duration-300 z-40 overflow-y-auto",
+        isSidebarCollapsed ? "w-0 hidden" : "w-64",
+      )}
+    >
+      {/* HEADER */}
+      <div className="flex h-14 items-center justify-between px-5 border-b border-border">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 items-center justify-center border-2 border-amber-400">
+            <div className="h-2.5 w-2.5 bg-amber-400" />
           </div>
-          {isSidebarCollapsed ? null : (
-            <button
-              className="py-3"
-              onClick={() =>
-                dispatch(setIsSidebarCollapsed(!isSidebarCollapsed))
-              }
-            >
-              <X className="h-6 w-6 text-gray-400 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-white" />
-            </button>
-          )}
+          <span className="text-sm font-bold tracking-tight text-foreground">
+            ProjectFlow
+          </span>
         </div>
+        <button
+          onClick={() => dispatch(setIsSidebarCollapsed(true))}
+          className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
 
-        {/* ACTIVE WORKSPACE */}
-        <div className="flex items-center justify-between px-8 py-4">
+      {/* WORKSPACE */}
+      <div className="px-4 py-3">
+        <div className="rounded-lg bg-muted/50 border border-border px-3 py-2.5 flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400 dark:text-zinc-500">
+            <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               Workspace
             </p>
-            <p className="truncate text-sm font-semibold text-gray-800 dark:text-zinc-200">
-              {activeWorkspace?.name ?? (activeWorkspaceId ? "Loading..." : "None selected")}
+            <p className="truncate text-sm font-semibold text-foreground leading-tight mt-0.5">
+              {activeWorkspace?.name ?? (activeWorkspaceId ? "Loading…" : "None")}
             </p>
           </div>
           <Link
             href="/workspaces"
-            className="ml-2 shrink-0 border border-gray-300 px-2 py-1 text-xs text-gray-500 transition-colors hover:border-amber-400 hover:text-amber-500 dark:border-stroke-dark dark:text-zinc-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
+            className="shrink-0 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground hover:border-amber-400 hover:text-amber-500 transition-colors"
           >
             Switch
           </Link>
         </div>
-
-        {/* NAVBAR LINKS */}
-        <nav className="z-10 w-full">
-          <SidebarLink icon={Home} label="Home" href="/dashboard" />
-          <SidebarLink icon={Settings} label="Settings" href="/settings" />
-          <SidebarLink icon={User} label="Members" href="/users" />
-        </nav>
-
-        {/* PROJECTS LINKS */}
-        <button
-          onClick={() => setShowProjects((prev) => !prev)}
-          className="flex w-full items-center justify-between px-8 py-3 text-[10px] uppercase tracking-[0.2em] text-gray-400 transition-colors hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300"
-        >
-          <span>Projects</span>
-          {showProjects ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </button>
-        {showProjects &&
-          projects?.map((project) => (
-            <SidebarLink
-              key={project._id}
-              icon={Briefcase}
-              label={project.name}
-              href={`/projects/${project._id}`}
-            />
-          ))}
       </div>
 
-      {/* BOTTOM — user sign out (mobile) */}
-      <div className="z-10 mt-32 flex w-full flex-col items-center gap-4 border-t border-gray-200 bg-white px-8 py-4 dark:border-stroke-dark dark:bg-dark-bg md:hidden">
-        <div className="flex w-full items-center">
-          <User className="h-6 w-6 cursor-pointer self-center rounded-full text-gray-400 dark:text-zinc-400" />
+      <Separator />
+
+      {/* NAV LINKS */}
+      <nav className="flex-1 px-3 py-3 space-y-0.5">
+        <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Navigation
+        </p>
+        <SidebarLink icon={Home} label="Home" href="/dashboard" />
+        <SidebarLink icon={Settings} label="Settings" href="/settings" />
+        <SidebarLink icon={User} label="Members" href="/users" />
+
+        <div className="pt-3">
           <button
-            className="ml-auto border border-amber-400 px-4 py-2 text-xs uppercase tracking-[0.15em] text-amber-600 transition-all hover:bg-amber-400 hover:text-zinc-950 dark:text-amber-400 dark:hover:text-zinc-950"
-            onClick={handleSignOut}
+            onClick={() => setShowProjects((p) => !p)}
+            className="flex w-full items-center justify-between rounded-md px-3 py-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
           >
-            Sign out
+            <span>Projects</span>
+            {showProjects ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
+          <div
+            className={`grid transition-all duration-300 ease-in-out ${
+              showProjects ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="mt-1 space-y-0.5">
+                {projects?.map((project) => (
+                  <SidebarLink
+                    key={project._id}
+                    icon={Briefcase}
+                    label={project.name}
+                    href={`/projects/${project._id}`}
+                  />
+                ))}
+                {projects?.length === 0 && (
+                  <p className="px-3 py-2 text-sm text-muted-foreground italic">No projects yet</p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
+      </nav>
+
+      {/* FOOTER — mobile sign out */}
+      <div className="border-t border-border px-4 py-3 md:hidden">
+        <button
+          onClick={handleSignOut}
+          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-destructive transition-colors"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
       </div>
-    </div>
+    </aside>
   );
 };
 
@@ -147,27 +154,23 @@ interface SidebarLinkProps {
 
 const SidebarLink = ({ href, icon: Icon, label }: SidebarLinkProps) => {
   const pathname = usePathname();
-  const isActive =
-    pathname === href || (pathname === "/" && href === "/dashboard");
+  const isActive = pathname === href || (pathname === "/" && href === "/dashboard");
 
   return (
-    <Link href={href} className="w-full">
+    <Link href={href} className="block" title={label}>
       <div
-        className={`relative flex cursor-pointer items-center gap-3 transition-colors hover:bg-gray-100 dark:hover:bg-dark-secondary/60 ${
-          isActive ? "bg-gray-100 dark:bg-dark-secondary" : ""
-        } justify-start px-8 py-3`}
+        className={cn(
+          "relative flex items-center gap-3 rounded-md px-3 py-2.5 text-base transition-colors",
+          isActive
+            ? "bg-accent text-accent-foreground font-medium"
+            : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+        )}
       >
         {isActive && (
-          <div className="absolute left-0 top-0 h-full w-[3px] bg-amber-400" />
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-amber-400" />
         )}
-        <Icon
-          className={`h-5 w-5 ${isActive ? "text-amber-500 dark:text-amber-400" : "text-gray-500 dark:text-zinc-400"}`}
-        />
-        <span
-          className={`text-sm font-medium ${isActive ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-zinc-400"}`}
-        >
-          {label}
-        </span>
+        <Icon className={cn("h-5 w-5 shrink-0", isActive ? "text-amber-500" : "")} />
+        <span className="truncate">{label}</span>
       </div>
     </Link>
   );

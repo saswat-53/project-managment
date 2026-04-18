@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Mail, CheckCircle, Moon, Sun } from "lucide-react";
 import { useGetCurrentUserQuery, useSendVerificationEmailMutation } from "@/state/api";
@@ -20,14 +20,6 @@ export default function VerifyEmailPromptPage() {
   const [sent, setSent] = useState(false);
   const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
 
   const handleSend = async () => {
     setError("");

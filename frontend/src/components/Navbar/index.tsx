@@ -1,20 +1,21 @@
 "use client";
 
 import React from "react";
-import { Menu, Moon, Settings, Sun, User } from "lucide-react";
+import { Menu, Moon, Settings, Sun } from "lucide-react";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector, getPersistor } from "@/app/redux";
 import { setActiveWorkspaceId, setIsDarkMode, setIsSidebarCollapsed } from "@/state";
 import { api, useGetCurrentUserQuery, useLogoutMutation } from "@/state/api";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const isSidebarCollapsed = useAppSelector(
-    (state) => state.global.isSidebarCollapsed,
-  );
+  const isSidebarCollapsed = useAppSelector((state) => state.global.isSidebarCollapsed);
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   const { data: currentUser } = useGetCurrentUserQuery();
@@ -31,64 +32,67 @@ const Navbar = () => {
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-stroke-dark dark:bg-dark-bg">
-      {/* Left — sidebar toggle */}
-      <div className="flex items-center gap-8">
-        {!isSidebarCollapsed ? null : (
+    <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4 shrink-0">
+      {/* Left */}
+      <div className="flex items-center gap-2">
+        {isSidebarCollapsed && (
           <button
-            onClick={() => dispatch(setIsSidebarCollapsed(!isSidebarCollapsed))}
+            onClick={() => dispatch(setIsSidebarCollapsed(false))}
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
           >
-            <Menu className="h-7 w-7 text-gray-500 hover:text-gray-800 dark:text-zinc-400 dark:hover:text-white" />
+            <Menu className="h-5 w-5" />
           </button>
         )}
       </div>
 
-      {/* Right — icons + user */}
-      <div className="flex items-center">
+      {/* Right */}
+      <div className="flex items-center gap-1">
         <button
           onClick={() => dispatch(setIsDarkMode(!isDarkMode))}
-          className="rounded p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-dark-secondary dark:hover:text-white"
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          title={isDarkMode ? "Light mode" : "Dark mode"}
         >
-          {isDarkMode ? (
-            <Sun className="h-5 w-5 cursor-pointer" />
-          ) : (
-            <Moon className="h-5 w-5 cursor-pointer" />
-          )}
+          {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </button>
+
         <Link
           href="/settings"
-          className="h-min w-min rounded p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-zinc-400 dark:hover:bg-dark-secondary dark:hover:text-white"
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          title="Settings"
         >
-          <Settings className="h-5 w-5 cursor-pointer" />
+          <Settings className="h-5 w-5" />
         </Link>
-        <div className="ml-2 mr-5 hidden min-h-[2em] w-px bg-gray-200 dark:bg-stroke-dark md:inline-block" />
-        <div className="hidden items-center justify-between md:flex">
-          <div className="align-center flex h-8 w-8 justify-center">
+
+        <Separator orientation="vertical" className="mx-2 h-5" />
+
+        <div className="hidden items-center gap-3 md:flex">
+          <div className="h-9 w-9 overflow-hidden rounded-full border border-border bg-muted flex items-center justify-center">
             {currentUser?.avatarUrl ? (
               <Image
                 src={currentUser.avatarUrl}
                 alt={currentUser.name}
-                width={32}
-                height={32}
-                className="h-full w-full rounded-full object-cover"
+                width={36}
+                height={36}
+                className="h-full w-full object-cover"
                 unoptimized
               />
             ) : (
-              <User className="h-5 w-5 cursor-pointer self-center rounded-full text-gray-500 dark:text-zinc-400" />
+              <span className={cn("text-sm font-semibold text-muted-foreground uppercase")}>
+                {currentUser?.name?.[0] ?? "U"}
+              </span>
             )}
           </div>
-          <span className="mx-3 text-sm text-gray-700 dark:text-zinc-300">
+
+          <span className="text-base font-medium text-foreground">
             {currentUser?.name}
           </span>
-          <button
-            className="hidden border border-amber-400 px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-amber-600 transition-all hover:bg-amber-400 hover:text-zinc-950 dark:text-amber-400 dark:hover:text-zinc-950 md:block"
-            onClick={handleSignOut}
-          >
+
+          <Button variant="outline" size="default" onClick={handleSignOut} className="h-9 px-4 text-sm">
             Sign out
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </header>
   );
 };
 

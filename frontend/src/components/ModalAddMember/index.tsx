@@ -80,10 +80,10 @@ const ModalAddMember = ({ isOpen, onClose, projectId, canManage }: Props) => {
       <div className="mt-4 space-y-6">
         {feedback && (
           <div
-            className={`rounded px-4 py-3 text-sm ${
+            className={`rounded-md px-4 py-3 text-sm ${
               feedback.type === "success"
-                ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                ? "border border-green-800/30 bg-green-950/20 text-green-400"
+                : "border border-red-800/30 bg-red-950/20 text-red-400"
             }`}
           >
             {feedback.message}
@@ -107,7 +107,7 @@ const ModalAddMember = ({ isOpen, onClose, projectId, canManage }: Props) => {
                 return (
                   <div
                     key={id}
-                    className="flex items-center justify-between rounded-md border border-gray-200 p-3 dark:border-stroke-dark"
+                    className="flex items-center justify-between rounded-md border border-border bg-muted/30 p-3"
                   >
                     <div className="flex items-center gap-2">
                       {avatar ? (
@@ -159,7 +159,7 @@ const ModalAddMember = ({ isOpen, onClose, projectId, canManage }: Props) => {
               {eligibleMembers.map((member) => (
                 <label
                   key={member._id}
-                  className="flex cursor-pointer items-center gap-3 rounded-md border border-gray-200 p-3 hover:bg-gray-50 dark:border-stroke-dark dark:hover:bg-dark-tertiary"
+                  className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-3 transition-colors hover:bg-accent"
                 >
                   <input
                     type="checkbox"
@@ -193,7 +193,7 @@ const ModalAddMember = ({ isOpen, onClose, projectId, canManage }: Props) => {
             <button
               type="submit"
               disabled={selected.length === 0 || isAdding}
-              className="flex w-full justify-center rounded-md border border-transparent bg-amber-400 px-4 py-2 text-base font-medium text-zinc-950 shadow-sm hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full justify-center rounded-md bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isAdding
                 ? "Adding..."
