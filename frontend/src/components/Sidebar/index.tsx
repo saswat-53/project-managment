@@ -108,21 +108,27 @@ const Sidebar = () => {
             <span>Projects</span>
             {showProjects ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
-          {showProjects && (
-            <div className="mt-1 space-y-0.5">
-              {projects?.map((project) => (
-                <SidebarLink
-                  key={project._id}
-                  icon={Briefcase}
-                  label={project.name}
-                  href={`/projects/${project._id}`}
-                />
-              ))}
-              {projects?.length === 0 && (
-                <p className="px-3 py-2 text-sm text-muted-foreground italic">No projects yet</p>
-              )}
+          <div
+            className={`grid transition-all duration-300 ease-in-out ${
+              showProjects ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="mt-1 space-y-0.5">
+                {projects?.map((project) => (
+                  <SidebarLink
+                    key={project._id}
+                    icon={Briefcase}
+                    label={project.name}
+                    href={`/projects/${project._id}`}
+                  />
+                ))}
+                {projects?.length === 0 && (
+                  <p className="px-3 py-2 text-sm text-muted-foreground italic">No projects yet</p>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </nav>
 

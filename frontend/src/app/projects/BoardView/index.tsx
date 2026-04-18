@@ -1,9 +1,9 @@
 import { useGetTasksQuery, useUpdateTaskStatusMutation, useDeleteTaskMutation } from "@/state/api";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Task as TaskType } from "@/state/api";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
 import ModalEditTask from "@/components/ModalEditTask";
@@ -77,6 +77,20 @@ const TaskColumn = ({
   }));
 
   const tasksCount = tasks.filter((task) => task.status === statusKey).length;
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [hasMoreBelow, setHasMoreBelow] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || tasksCount <= 2) {
+      setHasMoreBelow(false);
+      return;
+    }
+    const check = () => setHasMoreBelow(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+    check();
+    el.addEventListener("scroll", check);
+    return () => el.removeEventListener("scroll", check);
+  }, [tasks, statusKey, tasksCount]);
 
   const statusColor: Record<string, string> = {
     "todo": "#2563EB",
@@ -115,15 +129,28 @@ const TaskColumn = ({
         </div>
       </div>
 
-      <div
-        ref={(instance) => { drop(instance); }}
-        className="flex-1 overflow-y-auto"
-      >
-        {tasks
-          .filter((task) => task.status === statusKey)
-          .map((task) => (
-            <Task key={task._id} task={task} canManage={canManage} currentUserId={currentUserId} />
-          ))}
+      <div className="relative flex-1 overflow-hidden">
+        <div
+          ref={(instance) => { drop(instance); scrollRef.current = instance; }}
+          className="h-full overflow-y-auto"
+        >
+          {tasks
+            .filter((task) => task.status === statusKey)
+            .map((task) => (
+              <Task key={task._id} task={task} canManage={canManage} currentUserId={currentUserId} />
+            ))}
+        </div>
+        {hasMoreBelow && (
+          <button
+            onClick={() => {
+              scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+            }}
+            className="absolute bottom-0 left-0 right-0 flex flex-col items-center justify-end gap-0.5 bg-gradient-to-t from-white via-white/80 to-transparent dark:from-dark-secondary dark:via-dark-secondary/80 pt-8 pb-2 text-xs font-medium text-blue-500 dark:text-blue-400 hover:text-blue-600 transition-colors"
+          >
+            <ChevronDown size={16} className="animate-bounce" />
+            <span>more below</span>
+          </button>
+        )}
       </div>
     </div>
   );
