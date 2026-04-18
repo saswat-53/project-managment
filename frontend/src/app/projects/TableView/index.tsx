@@ -103,7 +103,7 @@ const TableView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Prop
   ];
 
   return (
-    <div className="flex flex-col w-full h-full px-4 pb-8 xl:px-6">
+    <div className="flex h-full w-full flex-col overflow-y-auto px-4 pb-8 xl:px-6">
       {editingTask && (
         <ModalEditTask
           isOpen={!!editingTask}

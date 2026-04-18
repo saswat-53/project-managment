@@ -58,63 +58,71 @@ const Project = () => {
         projectId={id}
         canManage={canManage}
       />
-      <ProjectHeader
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onAddMember={canManage ? () => setIsModalAddMemberOpen(true) : undefined}
-        projectId={id}
-        canManage={canManage}
-        project={project}
-      />
 
-      {isLoading && (
-        <div className="flex h-64 items-center justify-center text-gray-500 dark:text-gray-400">
-          Loading...
+      {/* Fixed-height shell: header pinned, view area scrolls internally */}
+      <div className="flex h-[calc(100vh-3.5rem)] flex-col">
+        <div className="flex-shrink-0">
+          <ProjectHeader
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            onAddMember={canManage ? () => setIsModalAddMemberOpen(true) : undefined}
+            projectId={id}
+            canManage={canManage}
+            project={project}
+          />
         </div>
-      )}
 
-      {taskError && (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 px-4 text-center">
-          <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-            {taskError.title}
-          </p>
-          <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">
-            {taskError.message}
-          </p>
+        <div className="flex-1 overflow-hidden">
+          {isLoading && (
+            <div className="flex h-full items-center justify-center text-gray-500 dark:text-gray-400">
+              Loading...
+            </div>
+          )}
+
+          {taskError && (
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
+              <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                {taskError.title}
+              </p>
+              <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">
+                {taskError.message}
+              </p>
+            </div>
+          )}
+
+          {!isLoading && !taskError && (
+            <>
+              {activeTab === "Board" && (
+                <Board
+                  id={id}
+                  setIsModalNewTaskOpen={setIsModalNewTaskOpen}
+                  canManage={canManage}
+                  currentUserId={currentUser?._id}
+                />
+              )}
+              {activeTab === "List" && (
+                <List
+                  id={id}
+                  setIsModalNewTaskOpen={setIsModalNewTaskOpen}
+                  canManage={canManage}
+                  currentUserId={currentUser?._id}
+                />
+              )}
+              {activeTab === "Timeline" && (
+                <Timeline id={id} setIsModalNewTaskOpen={setIsModalNewTaskOpen} />
+              )}
+              {activeTab === "Table" && (
+                <Table
+                  id={id}
+                  setIsModalNewTaskOpen={setIsModalNewTaskOpen}
+                  canManage={canManage}
+                  currentUserId={currentUser?._id}
+                />
+              )}
+            </>
+          )}
         </div>
-      )}
-
-      {!isLoading && !taskError && (
-        <>
-          {activeTab === "Board" && (
-            <Board
-              id={id}
-              setIsModalNewTaskOpen={setIsModalNewTaskOpen}
-              canManage={canManage}
-              currentUserId={currentUser?._id}
-            />
-          )}
-          {activeTab === "List" && (
-            <List
-              id={id}
-              setIsModalNewTaskOpen={setIsModalNewTaskOpen}
-              canManage={canManage}
-              currentUserId={currentUser?._id}
-            />
-          )}
-          {activeTab === "Timeline" && (
-            <Timeline id={id} setIsModalNewTaskOpen={setIsModalNewTaskOpen} />
-          )}
-          {activeTab === "Table" && (
-            <Table
-              id={id}
-              setIsModalNewTaskOpen={setIsModalNewTaskOpen}
-              canManage={canManage}
-              currentUserId={currentUser?._id}
-            />
-          )}
-        </>
-      )}
+      </div>
     </DashboardWrapper>
   );
 };

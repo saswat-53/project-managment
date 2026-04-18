@@ -4,7 +4,9 @@
       "Bash(cp:*)",
       "Bash(xargs ls:*)",
       "Bash(ls:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

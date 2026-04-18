@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Trash2, UserPlus } from "lucide-react";
+import { LogOut, Plus, Trash2, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   useGetWorkspacesQuery,
@@ -20,8 +20,7 @@ export default function WorkspacesPage() {
   const activeWorkspaceId = useAppSelector((state) => state.global.activeWorkspaceId);
 
   const { data: workspaces, isLoading, isError } = useGetWorkspacesQuery();
-  const [createWorkspace, { isLoading: isCreating }] =
-    useCreateWorkspaceMutation();
+  const [createWorkspace, { isLoading: isCreating }] = useCreateWorkspaceMutation();
   const [deleteWorkspace] = useDeleteWorkspaceMutation();
   const [logout] = useLogoutMutation();
 
@@ -29,7 +28,6 @@ export default function WorkspacesPage() {
   const [wsName, setWsName] = useState("");
   const [wsDesc, setWsDesc] = useState("");
   const [createError, setCreateError] = useState("");
-
   const [invitingWorkspaceId, setInvitingWorkspaceId] = useState<string | null>(null);
 
   const handleSelect = (workspace: Workspace) => {
@@ -52,9 +50,7 @@ export default function WorkspacesPage() {
 
   const handleDeleteWorkspace = async (workspaceId: string) => {
     await deleteWorkspace(workspaceId).unwrap();
-    if (activeWorkspaceId === workspaceId) {
-      dispatch(setActiveWorkspaceId(null));
-    }
+    if (activeWorkspaceId === workspaceId) dispatch(setActiveWorkspaceId(null));
   };
 
   const handleLogout = async () => {
@@ -66,96 +62,90 @@ export default function WorkspacesPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-white font-mono text-gray-900 dark:bg-dark-bg dark:text-white">
-      {/* Background grid */}
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.05]"
-        style={{
-          backgroundImage:
-            "linear-gradient(#f59e0b 1px, transparent 1px), linear-gradient(90deg, #f59e0b 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}
-      />
-
-      {/* ── Header ─────────────────────────────────────────── */}
-      <header className="relative z-10 flex items-center justify-between border-b border-gray-200 px-8 py-5 dark:border-stroke-dark">
+    <div className="min-h-screen bg-dark-bg font-mono text-white">
+      {/* HEADER */}
+      <header className="flex items-center justify-between border-b border-zinc-700 px-8 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center border-2 border-amber-400">
             <div className="h-3 w-3 bg-amber-400" />
           </div>
-          <span className="text-base font-bold uppercase tracking-widest text-gray-900 dark:text-white">
+          <span className="text-sm font-bold uppercase tracking-widest text-white">
             ProjectFlow
           </span>
         </div>
         <button
           onClick={handleLogout}
-          className="border border-gray-200 px-5 py-2.5 text-sm uppercase tracking-[0.15em] text-gray-500 transition-colors hover:border-zinc-500 hover:text-zinc-300 dark:border-stroke-dark dark:text-zinc-500"
+          className="flex items-center gap-2 rounded-md border border-zinc-700 px-4 py-2 text-xs uppercase tracking-widest text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-300"
         >
+          <LogOut className="h-3.5 w-3.5" />
           Sign Out
         </button>
       </header>
 
-      {/* ── Main ───────────────────────────────────────────── */}
-      <main className="relative z-10 mx-auto max-w-5xl px-8 py-16">
-        {/* Title block */}
-        <div className="mb-14">
-          <p className="mb-3 text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-zinc-500">
-            — Select workspace
+      {/* MAIN */}
+      <main className="mx-auto max-w-5xl px-8 py-16">
+        {/* Hero */}
+        <div className="mb-12">
+          <p className="mb-3 text-[11px] uppercase tracking-[0.3em] text-zinc-600">
+            — select workspace
           </p>
-          <h1 className="text-5xl font-light text-gray-900 dark:text-white">
-            Your <span className="text-amber-400">bases</span>
+          <h1 className="text-4xl font-light text-white">
+            Your <span className="text-amber-400">workspaces</span>
           </h1>
-          <div className="mt-4 h-px w-12 bg-amber-400" />
-          <p className="mt-4 text-base text-gray-500 dark:text-zinc-400">
+          <div className="mt-4 h-px w-10 bg-amber-400/60" />
+          <p className="mt-4 text-sm text-zinc-500">
             Choose a workspace to enter, or create a new one.
           </p>
         </div>
 
-        {/* Create button */}
-        <div className="mb-10 flex items-center justify-between">
-          <p className="text-sm text-gray-500 dark:text-zinc-500">
-            {workspaces ? `${workspaces.length} workspace${workspaces.length !== 1 ? "s" : ""}` : ""}
-          </p>
+        {/* Toolbar */}
+        <div className="mb-8 flex items-center justify-between">
+          <span className="text-xs text-zinc-600">
+            {workspaces
+              ? `${workspaces.length} workspace${workspaces.length !== 1 ? "s" : ""}`
+              : ""}
+          </span>
           <button
             onClick={() => setShowModal(true)}
-            className="group flex items-center gap-2 border border-amber-400/40 px-6 py-3 text-sm uppercase tracking-[0.15em] text-amber-400 transition-all hover:border-amber-400 hover:bg-amber-400 hover:text-zinc-950"
+            className="flex items-center gap-2 rounded-md border border-amber-400/30 bg-amber-400/5 px-5 py-2.5 text-xs uppercase tracking-widest text-amber-400 transition-all hover:border-amber-400/60 hover:bg-amber-400/10"
           >
-            <span className="text-lg leading-none">+</span>
+            <Plus className="h-3.5 w-3.5" />
             New Workspace
           </button>
         </div>
 
-        {/* States */}
+        {/* Loading */}
         {isLoading && (
           <div className="flex items-center gap-3 py-20 text-zinc-600">
-            <span className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-600 border-t-amber-400" />
-            <span className="text-sm uppercase tracking-widest">Loading...</span>
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-700 border-t-amber-400" />
+            <span className="text-xs uppercase tracking-widest">Loading...</span>
           </div>
         )}
 
+        {/* Error */}
         {isError && (
-          <div className="border border-red-800 bg-red-950/30 px-6 py-4">
+          <div className="rounded-lg border border-red-900/50 bg-red-950/20 px-5 py-4">
             <p className="text-sm text-red-400">Failed to load workspaces.</p>
           </div>
         )}
 
-        {/* Empty state */}
+        {/* Empty */}
         {!isLoading && !isError && workspaces?.length === 0 && (
-          <div className="relative border border-dashed border-gray-200 px-8 py-20 text-center dark:border-stroke-dark">
-            <div className="absolute left-4 top-4 h-6 w-6 border-l border-t border-gray-200 dark:border-stroke-dark" />
-            <div className="absolute bottom-4 right-4 h-6 w-6 border-b border-r border-gray-200 dark:border-stroke-dark" />
-            <p className="text-4xl text-zinc-800">[ ]</p>
-            <p className="mt-4 text-base text-gray-500 dark:text-zinc-500">No workspaces yet.</p>
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-zinc-700 py-24 text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center border-2 border-zinc-700">
+              <div className="h-5 w-5 border-2 border-zinc-600" />
+            </div>
+            <p className="text-sm text-zinc-500">No workspaces yet.</p>
             <button
               onClick={() => setShowModal(true)}
-              className="mt-6 border border-amber-400/30 px-6 py-2.5 text-sm uppercase tracking-[0.15em] text-amber-400 transition-all hover:border-amber-400"
+              className="mt-5 rounded-md border border-amber-400/30 px-5 py-2.5 text-xs uppercase tracking-widest text-amber-400 transition-all hover:border-amber-400/60"
             >
               Create first workspace
             </button>
           </div>
         )}
 
-        {/* Workspace grid */}
+        {/* Grid */}
         {!isLoading && workspaces && workspaces.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {workspaces.map((ws, i) => (
@@ -172,7 +162,7 @@ export default function WorkspacesPage() {
         )}
       </main>
 
-      {/* ── Invite Modal ───────────────────────────────────── */}
+      {/* INVITE MODAL */}
       {invitingWorkspaceId && (
         <ModalInviteMember
           workspaceId={invitingWorkspaceId}
@@ -181,24 +171,33 @@ export default function WorkspacesPage() {
         />
       )}
 
-      {/* ── Create Modal ───────────────────────────────────── */}
+      {/* CREATE MODAL */}
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 px-6 backdrop-blur-sm dark:bg-dark-bg/90"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 px-6 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
         >
-          <div className="relative w-full max-w-[440px] border border-gray-200 bg-gray-50 p-10 dark:border-dark-tertiary dark:bg-dark-secondary">
-            <div className="absolute -left-px -top-px h-5 w-5 border-l-2 border-t-2 border-amber-400" />
-            <div className="absolute -bottom-px -right-px h-5 w-5 border-b-2 border-r-2 border-amber-400" />
+          <div className="relative w-full max-w-[440px] rounded-xl border border-zinc-700 bg-zinc-700 p-8 shadow-2xl">
+            {/* Amber corner accents */}
+            <div className="absolute left-0 top-0 h-px w-16 bg-gradient-to-r from-amber-400 to-transparent" />
+            <div className="absolute left-0 top-0 h-16 w-px bg-gradient-to-b from-amber-400 to-transparent" />
 
-            <div className="mb-8">
-              <h2 className="text-xl font-light text-gray-900 dark:text-white">New Workspace</h2>
-              <div className="mt-3 h-px w-8 bg-amber-400" />
+            <div className="mb-7 flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">New Workspace</h2>
+                <p className="mt-1 text-xs text-zinc-500">Create a shared space for your team.</p>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="rounded-md p-1 text-zinc-600 hover:text-zinc-300 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
-            <form onSubmit={handleCreate} className="space-y-5">
+            <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500">
+                <label className="mb-1.5 block text-[11px] uppercase tracking-widest text-zinc-500">
                   Name <span className="text-amber-400">*</span>
                 </label>
                 <input
@@ -207,12 +206,12 @@ export default function WorkspacesPage() {
                   onChange={(e) => setWsName(e.target.value)}
                   required
                   placeholder="e.g. Acme Corp"
-                  className="w-full border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900 placeholder-gray-400 outline-none focus:border-amber-400 dark:border-dark-tertiary dark:bg-dark-secondary dark:text-white dark:placeholder-zinc-600"
+                  className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-amber-400/50 focus:ring-0"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500">
+                <label className="mb-1.5 block text-[11px] uppercase tracking-widest text-zinc-500">
                   Description
                 </label>
                 <textarea
@@ -220,28 +219,30 @@ export default function WorkspacesPage() {
                   onChange={(e) => setWsDesc(e.target.value)}
                   placeholder="Optional — what's this workspace for?"
                   rows={3}
-                  className="w-full resize-none border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900 placeholder-gray-400 outline-none focus:border-amber-400 dark:border-dark-tertiary dark:bg-dark-secondary dark:text-white dark:placeholder-zinc-600"
+                  className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-amber-400/50"
                 />
               </div>
 
               {createError && (
-                <p className="text-sm text-red-400">{createError}</p>
+                <p className="rounded-md border border-red-900/40 bg-red-950/20 px-3 py-2 text-xs text-red-400">
+                  {createError}
+                </p>
               )}
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 border border-gray-200 py-3 text-sm uppercase tracking-[0.15em] text-gray-500 transition-all hover:border-zinc-500 hover:text-zinc-300 dark:border-stroke-dark dark:text-zinc-500"
+                  className="flex-1 rounded-md border border-zinc-700 py-2.5 text-xs uppercase tracking-widest text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isCreating || !wsName}
-                  className="flex-1 bg-amber-400 py-3 text-sm font-bold uppercase tracking-[0.15em] text-zinc-950 transition-all hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 rounded-md bg-amber-400 py-2.5 text-xs font-bold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isCreating ? "Creating..." : "Create"}
+                  {isCreating ? "Creating…" : "Create"}
                 </button>
               </div>
             </form>
@@ -252,7 +253,7 @@ export default function WorkspacesPage() {
   );
 }
 
-// ── Workspace Card Component ──────────────────────────────────────────────────
+// ── WorkspaceCard ─────────────────────────────────────────────────────────────
 
 function WorkspaceCard({
   workspace,
@@ -287,95 +288,97 @@ function WorkspaceCard({
     }
   };
 
+  /* Stable color per workspace initial */
+  const initials = workspace.name.slice(0, 2).toUpperCase();
+  const hues = [334, 262, 199, 150, 38, 16];
+  const hue = hues[workspace.name.charCodeAt(0) % hues.length];
+
   return (
     <div
       onClick={() => !isDeleteConfirming && onSelect(workspace)}
-      className="group relative cursor-pointer border border-gray-200 bg-gray-50/50 p-7 text-left transition-all duration-200 hover:border-amber-400/50 hover:bg-gray-50 dark:border-stroke-dark dark:bg-dark-secondary/50 dark:hover:bg-dark-secondary"
+      className="group relative cursor-pointer overflow-hidden rounded-xl border border-zinc-600 bg-zinc-700 p-8 transition-all duration-200 hover:border-amber-400/40"
     >
-      {/* Index badge */}
-      <div className="absolute right-4 top-4 text-xs text-zinc-700 transition-colors group-hover:text-amber-400/50">
+      {/* Top amber reveal line */}
+      <div className="absolute left-0 top-0 h-px w-0 bg-gradient-to-r from-amber-400 to-amber-400/0 transition-all duration-500 group-hover:w-full" />
+
+      {/* Index */}
+      <span className="absolute right-4 top-4 text-[11px] font-mono text-zinc-500 group-hover:text-amber-400/60 transition-colors">
         {String(index + 1).padStart(2, "0")}
+      </span>
+
+      {/* Avatar */}
+      <div
+        className="mb-6 flex h-14 w-14 items-center justify-center rounded text-lg font-bold transition-all duration-200 group-hover:scale-110 group-hover:brightness-125"
+        style={{ background: `hsl(${hue} 65% 35%)`, color: `hsl(${hue} 90% 85%)` }}
+      >
+        {initials}
       </div>
 
-      {/* Top accent line */}
-      <div className="absolute left-0 top-0 h-px w-0 bg-amber-400 transition-all duration-300 group-hover:w-full" />
-
-      {/* Icon */}
-      <div className="mb-5 flex h-11 w-11 items-center justify-center border border-gray-200 transition-colors group-hover:border-amber-400/40 dark:border-stroke-dark">
-        <span className="text-xl text-zinc-600 transition-colors group-hover:text-amber-400">
-          ⬡
-        </span>
-      </div>
-
-      {/* Content */}
-      <h3 className="mb-2 text-base font-bold uppercase tracking-wide text-gray-900 transition-colors group-hover:text-amber-400 dark:text-white">
+      {/* Name + description */}
+      <h3 className="mb-2 text-base font-semibold text-white group-hover:text-amber-400 transition-colors leading-snug">
         {workspace.name}
       </h3>
 
       {workspace.description && (
-        <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-gray-500 dark:text-zinc-500">
+        <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-zinc-400">
           {workspace.description}
         </p>
       )}
 
       {deleteError && (
-        <p className="mb-2 text-xs text-red-400">{deleteError}</p>
+        <p className="mb-2 text-[11px] text-red-400">{deleteError}</p>
       )}
 
       {/* Footer */}
       <div
-        className="flex items-center justify-between border-t border-gray-200 pt-4 transition-colors group-hover:border-gray-200 dark:border-stroke-dark dark:group-hover:border-stroke-dark"
+        className="flex items-center justify-between border-t border-zinc-700 pt-4 mt-4"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Left — delete (admins) / invite (admins + managers) or member count */}
-        {isAdmin || canInvite ? (
-          isDeleteConfirming ? (
-            <div className="flex items-center gap-3">
+        {isDeleteConfirming ? (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="text-[11px] uppercase tracking-widest text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
+            >
+              {isDeleting ? "…" : "Confirm"}
+            </button>
+            <button
+              onClick={() => { setIsDeleteConfirming(false); setDeleteError(""); }}
+              disabled={isDeleting}
+              className="text-[11px] uppercase tracking-widest text-zinc-600 hover:text-zinc-400 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (isAdmin || canInvite) ? (
+          <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+            {canInvite && (
               <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="text-xs uppercase tracking-[0.15em] text-red-400 hover:text-red-300 disabled:opacity-50"
+                onClick={(e) => { e.stopPropagation(); onInvite(workspace._id); }}
+                className="rounded-md p-2 text-zinc-400 hover:bg-zinc-600 hover:text-amber-400 transition-colors"
+                title="Invite member"
               >
-                {isDeleting ? "..." : "Confirm"}
+                <UserPlus className="h-5 w-5" />
               </button>
+            )}
+            {isAdmin && (
               <button
-                onClick={() => { setIsDeleteConfirming(false); setDeleteError(""); }}
-                disabled={isDeleting}
-                className="text-xs uppercase tracking-[0.15em] text-zinc-600 hover:text-zinc-400"
+                onClick={() => setIsDeleteConfirming(true)}
+                className="rounded-md p-2 text-zinc-400 hover:bg-zinc-600 hover:text-red-400 transition-colors"
+                title="Delete workspace"
               >
-                Cancel
+                <Trash2 className="h-5 w-5" />
               </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 opacity-0 transition-all group-hover:opacity-100">
-              {canInvite && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onInvite(workspace._id); }}
-                  className="text-zinc-600 hover:text-amber-400"
-                  title="Invite member"
-                >
-                  <UserPlus size={14} />
-                </button>
-              )}
-              {isAdmin && (
-                <button
-                  onClick={() => setIsDeleteConfirming(true)}
-                  className="text-zinc-600 hover:text-red-400"
-                  title="Delete workspace"
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
-            </div>
-          )
+            )}
+          </div>
         ) : (
-          <span className="text-xs uppercase tracking-[0.15em] text-gray-500 dark:text-zinc-500">
+          <span className="text-[11px] text-zinc-600">
             {workspace.members.length} member{workspace.members.length !== 1 ? "s" : ""}
           </span>
         )}
 
-        {/* Right — Enter */}
-        <span className="text-xs uppercase tracking-[0.15em] text-zinc-600 transition-colors group-hover:text-amber-400">
+        <span className="text-[11px] uppercase tracking-widest text-zinc-700 group-hover:text-amber-400 transition-colors">
           Enter →
         </span>
       </div>

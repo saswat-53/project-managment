@@ -14,7 +14,7 @@ const ListView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Props
   const { data: tasks } = useGetTasksQuery({ projectId: id });
 
   return (
-    <div className="px-4 pb-8 xl:px-6">
+    <div className="h-full overflow-y-auto px-4 pb-8 xl:px-6">
       <div className="pt-5">
         <Header
           name="List"

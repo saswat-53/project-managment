@@ -81,7 +81,7 @@ const Timeline = ({ id, setIsModalNewTaskOpen }: Props) => {
   };
 
   return (
-    <div className="px-4 xl:px-6">
+    <div className="h-full overflow-y-auto px-4 xl:px-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 py-5">
         <div>

@@ -52,10 +52,10 @@ const ModalEditProject = ({ isOpen, onClose, project }: Props) => {
   };
 
   const inputStyles =
-    "w-full rounded border border-gray-300 p-2 shadow-sm dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none";
+    "w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring";
 
   const selectStyles =
-    "w-full rounded border border-gray-300 px-3 py-2 shadow-sm dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none";
+    "w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} name="Edit Project">
@@ -151,7 +151,7 @@ const ModalEditProject = ({ isOpen, onClose, project }: Props) => {
         <button
           type="submit"
           disabled={!name.trim() || isLoading}
-          className={`mt-2 flex w-full justify-center rounded-md border border-transparent bg-amber-400 px-4 py-2 text-base font-medium text-zinc-950 shadow-sm hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 ${
+          className={`mt-2 flex w-full justify-center rounded-md bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 ${
             !name.trim() || isLoading ? "cursor-not-allowed opacity-50" : ""
           }`}
         >
