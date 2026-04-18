@@ -4,8 +4,9 @@ import { Task, useDeleteTaskMutation } from "@/state/api";
 import { format } from "date-fns";
 import Image from "next/image";
 import React, { useState } from "react";
-import { CalendarDays, MessageSquare, Pencil, Trash2, User } from "lucide-react";
+import { CalendarDays, Trash2, User } from "lucide-react";
 import ModalEditTask from "@/components/ModalEditTask";
+import { cn } from "@/lib/utils";
 
 type Props = {
   task: Task;
@@ -13,89 +14,70 @@ type Props = {
   currentUserId?: string;
 };
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; darkBg: string }> = {
-  "todo":        { label: "To Do",       color: "text-amber-600",  bg: "bg-amber-50",   darkBg: "dark:bg-amber-400/10" },
-  "in-progress": { label: "In Progress", color: "text-blue-600",   bg: "bg-blue-50",    darkBg: "dark:bg-blue-400/10"  },
-  "done":        { label: "Done",        color: "text-green-600",  bg: "bg-green-50",   darkBg: "dark:bg-green-400/10" },
-};
-
-const STATUS_BORDER: Record<string, string> = {
-  "todo":        "border-l-amber-400",
-  "in-progress": "border-l-blue-400",
-  "done":        "border-l-green-500",
+const STATUS_CONFIG: Record<string, { label: string; dot: string; badge: string }> = {
+  "todo":        { label: "To Do",       dot: "bg-amber-400",  badge: "bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-amber-400" },
+  "in-progress": { label: "In Progress", dot: "bg-blue-500",   badge: "bg-blue-50 text-blue-700 dark:bg-blue-400/10 dark:text-blue-400"   },
+  "done":        { label: "Done",        dot: "bg-green-500",  badge: "bg-green-50 text-green-700 dark:bg-green-400/10 dark:text-green-400" },
 };
 
 const TaskCard = ({ task, canManage, currentUserId }: Props) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
   const [deleteTask, { isLoading: isDeleting }] = useDeleteTaskMutation();
-  const status = STATUS_CONFIG[task.status ?? "todo"] ?? STATUS_CONFIG["todo"];
-  const borderColor = STATUS_BORDER[task.status ?? "todo"] ?? STATUS_BORDER["todo"];
-  const isDone = task.status === "done";
 
+  const status = STATUS_CONFIG[task.status ?? "todo"] ?? STATUS_CONFIG["todo"];
+  const isDone = task.status === "done";
   const isCreator = task.createdBy?._id === currentUserId;
   const isAssignee = task.assignedTo?._id === currentUserId;
   const canEditThisTask = canManage || isCreator || isAssignee;
 
-  const handleDelete = async () => {
-    await deleteTask(task._id);
-  };
-
   return (
     <>
       {isEditOpen && (
-        <ModalEditTask
-          isOpen={isEditOpen}
-          onClose={() => setIsEditOpen(false)}
-          task={task}
-        />
+        <ModalEditTask isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} task={task} />
       )}
+
       <div
-        className={`group relative flex flex-col rounded-lg border-l-4 bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-dark-secondary ${borderColor}`}
+        onClick={() => task.status !== "done" && setIsEditOpen(true)}
+        className={`group flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-stroke-dark dark:bg-dark-secondary ${task.status !== "done" ? "cursor-pointer" : ""}`}
       >
-        <div className="flex flex-1 flex-col p-4">
-          {/* Top row — status badge + actions */}
-          <div className="mb-3 flex items-center justify-between">
-            <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${status.color} ${status.bg} ${status.darkBg}`}
-            >
+
+        {/* Body */}
+        <div className="flex flex-1 flex-col gap-3 p-5">
+
+          {/* Status badge + actions row */}
+          <div className="flex items-center justify-between">
+            <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold", status.badge)}>
+              <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />
               {status.label}
             </span>
+
             {isDeleteConfirming ? (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                 <button
-                  onClick={handleDelete}
+                  onClick={() => deleteTask(task._id)}
                   disabled={isDeleting}
-                  className="rounded px-1.5 py-0.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50"
+                  className="rounded-md bg-red-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
                 >
-                  {isDeleting ? "..." : "Delete"}
+                  {isDeleting ? "…" : "Delete"}
                 </button>
                 <button
                   onClick={() => setIsDeleteConfirming(false)}
                   disabled={isDeleting}
-                  className="rounded px-1.5 py-0.5 text-xs text-gray-500 hover:text-gray-700 dark:text-neutral-400"
+                  className="text-xs text-muted-foreground hover:text-foreground"
                 >
                   Cancel
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
                 {canEditThisTask && (
                   <button
-                    className={isDone ? "cursor-not-allowed text-gray-300 dark:text-neutral-700" : "text-gray-400 hover:text-amber-500 dark:text-neutral-500 dark:hover:text-amber-400"}
-                    onClick={() => !isDone && setIsEditOpen(true)}
-                    title={isDone ? "Cannot edit a completed task" : "Edit task"}
-                  >
-                    <Pencil size={14} />
-                  </button>
-                )}
-                {canEditThisTask && (
-                  <button
-                    className="text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
                     onClick={() => setIsDeleteConfirming(true)}
                     title="Delete task"
+                    className="text-muted-foreground hover:text-red-500 dark:hover:text-red-400"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={15} />
                   </button>
                 )}
               </div>
@@ -103,57 +85,46 @@ const TaskCard = ({ task, canManage, currentUserId }: Props) => {
           </div>
 
           {/* Title */}
-          <h4
-            className={`mb-1 text-sm font-semibold leading-snug dark:text-white ${
-              isDone ? "text-gray-400 line-through dark:text-neutral-500" : "text-gray-800"
-            }`}
-          >
+          <h4 className={cn(
+            "text-base font-semibold leading-snug dark:text-white",
+            isDone ? "text-gray-400 line-through dark:text-neutral-500" : "text-gray-900",
+          )}>
             {task.title}
           </h4>
 
           {/* Description */}
           {task.description && (
-            <p className="line-clamp-2 text-xs leading-relaxed text-gray-500 dark:text-neutral-400">
+            <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
               {task.description}
             </p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 dark:border-stroke-dark">
-          {/* Due date + comment count */}
-          <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-neutral-500">
-            <div className="flex items-center gap-1.5">
-              <CalendarDays size={12} />
-              <span>
-                {task.dueDate ? format(new Date(task.dueDate), "MMM d") : "No due date"}
-              </span>
-            </div>
-            {(task.comments?.length ?? 0) > 0 && (
-              <div className="flex items-center gap-1">
-                <MessageSquare size={12} />
-                <span>{task.comments!.length}</span>
-              </div>
-            )}
+        <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3 dark:border-stroke-dark">
+          {/* Due date */}
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <CalendarDays size={14} />
+            <span>{task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "No due date"}</span>
           </div>
 
           {/* Assignee */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {task.assignedTo?.avatarUrl ? (
               <Image
                 src={task.assignedTo.avatarUrl}
                 alt={task.assignedTo.name}
-                width={22}
-                height={22}
+                width={26}
+                height={26}
                 className="rounded-full object-cover ring-2 ring-white dark:ring-dark-secondary"
                 unoptimized
               />
             ) : (
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 dark:bg-dark-tertiary">
-                <User size={11} className="text-gray-400 dark:text-neutral-500" />
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 dark:bg-dark-tertiary">
+                <User size={13} className="text-muted-foreground" />
               </div>
             )}
-            <span className="max-w-[80px] truncate text-xs text-gray-400 dark:text-neutral-500">
+            <span className="max-w-[90px] truncate text-sm text-muted-foreground">
               {task.assignedTo?.name ?? "Unassigned"}
             </span>
           </div>

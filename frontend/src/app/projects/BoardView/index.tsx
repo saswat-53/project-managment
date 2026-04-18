@@ -3,7 +3,7 @@ import { useState } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Task as TaskType } from "@/state/api";
-import { MessageSquareMore, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import Image from "next/image";
 import ModalEditTask from "@/components/ModalEditTask";
@@ -31,7 +31,7 @@ const BoardView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Boar
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="flex gap-4 overflow-x-auto p-4 pb-6">
+      <div className="flex h-full gap-4 overflow-x-auto p-4 pb-6">
         {taskStatus.map(({ key, label }) => (
           <TaskColumn
             key={key}
@@ -86,17 +86,15 @@ const TaskColumn = ({
 
   return (
     <div
-      ref={(instance) => {
-        drop(instance);
-      }}
-      className={`min-w-64 flex-1 rounded-lg py-2 xl:px-2 ${isOver ? "bg-blue-100 dark:bg-neutral-950" : ""}`}
+      className={`flex min-w-64 flex-1 flex-col rounded-lg py-2 xl:px-2 ${isOver ? "bg-blue-100 dark:bg-neutral-950" : ""}`}
+      style={{ maxHeight: "calc(100vh - 220px)" }}
     >
-      <div className="mb-3 flex w-full">
+      <div className="mb-3 flex w-full flex-shrink-0">
         <div
           className="w-2 rounded-s-lg"
           style={{ backgroundColor: statusColor[statusKey] }}
         />
-        <div className="flex w-full items-center justify-between rounded-e-lg bg-white px-5 py-4 dark:bg-dark-secondary">
+        <div className="flex w-full items-center justify-between rounded-e-lg bg-white px-5 py-4 border border-l-0 border-gray-200 dark:border-stroke-dark dark:bg-dark-secondary">
           <h3 className="flex items-center text-lg font-semibold dark:text-white">
             {statusLabel}{" "}
             <span
@@ -117,11 +115,16 @@ const TaskColumn = ({
         </div>
       </div>
 
-      {tasks
-        .filter((task) => task.status === statusKey)
-        .map((task) => (
-          <Task key={task._id} task={task} canManage={canManage} currentUserId={currentUserId} />
-        ))}
+      <div
+        ref={(instance) => { drop(instance); }}
+        className="flex-1 overflow-y-auto"
+      >
+        {tasks
+          .filter((task) => task.status === statusKey)
+          .map((task) => (
+            <Task key={task._id} task={task} canManage={canManage} currentUserId={currentUserId} />
+          ))}
+      </div>
     </div>
   );
 };
@@ -162,12 +165,11 @@ const Task = ({ task, canManage, currentUserId }: TaskProps) => {
         />
       )}
       <div
-        ref={(instance) => {
-          drag(instance);
-        }}
-        className={`mb-4 rounded-md bg-white shadow dark:bg-dark-secondary ${
+        ref={(instance) => { drag(instance); }}
+        onClick={() => !isDragging && task.status !== "done" && setIsEditOpen(true)}
+        className={`mb-4 rounded-md bg-white border border-gray-200 shadow-sm dark:border-stroke-dark dark:bg-dark-secondary ${
           isDragging ? "opacity-50" : "opacity-100"
-        }`}
+        } ${task.status !== "done" ? "cursor-pointer" : ""}`}
       >
         <div className="p-4 md:p-6">
           <div className="my-3 flex justify-between">
@@ -233,17 +235,8 @@ const Task = ({ task, canManage, currentUserId }: TaskProps) => {
               <div className="flex items-center gap-2">
                 {canEditThisTask && (
                   <button
-                    className={`flex items-center ${task.status === "done" ? "cursor-not-allowed text-gray-300 dark:text-neutral-700" : "text-gray-500 hover:text-blue-500 dark:text-neutral-500 dark:hover:text-blue-400"}`}
-                    onClick={() => task.status !== "done" && setIsEditOpen(true)}
-                    title={task.status === "done" ? "Cannot edit a completed task" : "Edit task"}
-                  >
-                    <MessageSquareMore size={20} />
-                  </button>
-                )}
-                {canEditThisTask && (
-                  <button
                     className="text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
-                    onClick={() => setIsDeleteConfirming(true)}
+                    onClick={(e) => { e.stopPropagation(); setIsDeleteConfirming(true); }}
                     title="Delete task"
                   >
                     <Trash2 size={16} />
