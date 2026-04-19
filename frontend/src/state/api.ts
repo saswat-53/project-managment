@@ -71,6 +71,7 @@ export interface Task {
   title: string;
   description?: string;
   status?: "todo" | "in-progress" | "done";
+  priority?: "low" | "medium" | "high" | "urgent" | "backlog";
   dueDate?: string;
   project: string;
   workspace: string;
@@ -246,6 +247,7 @@ export const api = createApi({
         title: string;
         description?: string;
         status?: string;
+        priority?: string;
         dueDate?: string;
         projectId: string;
         assignedTo?: string;
@@ -288,6 +290,7 @@ export const api = createApi({
         title?: string;
         description?: string;
         status?: string;
+        priority?: string;
         dueDate?: string;
         assignedTo?: string | null;
       }
@@ -500,13 +503,13 @@ export const {
   useVerifyEmailMutation,
   useInviteToWorkspaceMutation,
   useJoinWorkspaceMutation,
-  useRemoveWorkspaceMemberMutation,
-  useRemoveProjectMemberMutation,
   useAddTaskCommentMutation,
   useEditTaskCommentMutation,
   useDeleteTaskCommentMutation,
   useAddTaskReplyMutation,
   useDeleteTaskReplyMutation,
+  useRemoveWorkspaceMemberMutation,
+  useRemoveProjectMemberMutation,
   useGetPresignedUploadUrlMutation,
   useConfirmAttachmentUploadMutation,
   useDeleteTaskAttachmentMutation,

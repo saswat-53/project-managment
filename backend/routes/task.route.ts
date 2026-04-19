@@ -55,7 +55,7 @@ const router = Router();
  *                 example: todo
  *               priority:
  *                 type: string
- *                 enum: [low, medium, high, urgent]
+ *                 enum: [low, medium, high, urgent, backlog]
  *                 example: medium
  *               dueDate:
  *                 type: string
@@ -97,6 +97,14 @@ router.post("/tasks", verifyJWT, createTask);
  *           type: string
  *         description: Project ID
  *         example: 60d0fe4f5311236168a109ca
+ *       - in: query
+ *         name: priority
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [low, medium, high, urgent, backlog]
+ *         description: Filter tasks by priority level
+ *         example: high
  *     responses:
  *       200:
  *         description: Tasks retrieved successfully
@@ -156,7 +164,7 @@ router.get("/project/:projectId", verifyJWT, getTasksByProject);
  *                 example: in_progress
  *               priority:
  *                 type: string
- *                 enum: [low, medium, high, urgent]
+ *                 enum: [low, medium, high, urgent, backlog]
  *                 example: high
  *               dueDate:
  *                 type: string

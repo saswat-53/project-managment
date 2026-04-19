@@ -20,12 +20,21 @@ const STATUS_CONFIG: Record<string, { label: string; dot: string; badge: string 
   "done":        { label: "Done",        dot: "bg-green-500",  badge: "bg-green-50 text-green-700 dark:bg-green-400/10 dark:text-green-400" },
 };
 
+const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string; darkBg: string }> = {
+  "backlog": { label: "Backlog", color: "text-gray-600", bg: "bg-gray-100", darkBg: "dark:bg-gray-800" },
+  "low":      { label: "Low", color: "text-blue-600", bg: "bg-blue-50", darkBg: "dark:bg-blue-900/30" },
+  "medium":   { label: "Medium", color: "text-yellow-600", bg: "bg-yellow-50", darkBg: "dark:bg-yellow-900/30" },
+  "high":     { label: "High", color: "text-orange-600", bg: "bg-orange-50", darkBg: "dark:bg-orange-900/30" },
+  "urgent":   { label: "Urgent", color: "text-red-600", bg: "bg-red-50", darkBg: "dark:bg-red-900/30" },
+};
+
 const TaskCard = ({ task, canManage, currentUserId }: Props) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
   const [deleteTask, { isLoading: isDeleting }] = useDeleteTaskMutation();
 
   const status = STATUS_CONFIG[task.status ?? "todo"] ?? STATUS_CONFIG["todo"];
+  const priority = PRIORITY_CONFIG[task.priority ?? "medium"] ?? PRIORITY_CONFIG["medium"];
   const isDone = task.status === "done";
   const isCreator = task.createdBy?._id === currentUserId;
   const isAssignee = task.assignedTo?._id === currentUserId;
@@ -45,12 +54,19 @@ const TaskCard = ({ task, canManage, currentUserId }: Props) => {
         {/* Body */}
         <div className="flex flex-1 flex-col gap-3 p-5">
 
-          {/* Status badge + actions row */}
+          {/* Status badge + priority badge + actions row */}
           <div className="flex items-center justify-between">
-            <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold", status.badge)}>
-              <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />
-              {status.label}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold", status.badge)}>
+                <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />
+                {status.label}
+              </span>
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${priority.color} ${priority.bg} ${priority.darkBg}`}
+              >
+                {priority.label}
+              </span>
+            </div>
 
             {isDeleteConfirming ? (
               <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>

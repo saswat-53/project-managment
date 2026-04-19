@@ -60,6 +60,7 @@ async function recomputeProjectStatus(projectId: mongoose.Types.ObjectId | strin
  * - assignedTo: string (optional, user ID, must be project member)
  * - dueDate: string | Date (optional, ISO datetime string or Date object)
  * - status: string (optional, "todo" | "in-progress" | "done", defaults to "todo")
+ * - priority: string (optional, "low" | "medium" | "high" | "urgent" | "backlog", defaults to "medium")
  *
  * Response:
  * - 201: Task created successfully with task object
@@ -87,7 +88,7 @@ export const createTask = async (req: Request, res: Response) => {
       });
     }
 
-    const { title, description, projectId, assignedTo, dueDate, status } =
+    const { title, description, projectId, assignedTo, dueDate, status, priority } =
       validation.data;
     const userId = (req as any).user._id;
 
@@ -134,6 +135,7 @@ export const createTask = async (req: Request, res: Response) => {
       createdBy: userId,
       dueDate,
       status: status || "todo",
+      priority: priority || "medium",
     });
 
     // Add task to project.tasks array (bidirectional relationship)
@@ -179,12 +181,16 @@ export const createTask = async (req: Request, res: Response) => {
  *
  * Retrieves all tasks within a specific project.
  * User must be a project member to view tasks.
+ * Supports optional priority filtering via query parameter.
  *
  * @route GET /api/task/project/:projectId
  * @access Private (requires authentication and project membership)
  *
  * URL Parameters:
  * - projectId: string (required, MongoDB ObjectId, validated by Zod)
+ *
+ * Query Parameters:
+ * - priority: string (optional, "low" | "medium" | "high" | "urgent" | "backlog")
  *
  * Response:
  * - 200: Array of tasks with populated assignedTo and createdBy
@@ -228,7 +234,14 @@ export const getTasksByProject = async (req: Request, res: Response) => {
       });
     }
 
-    const tasks = await Task.find({ project: projectId })
+    // Add priority filter from query params
+    const { priority } = req.query;
+    const filter: any = { project: projectId };
+    if (priority && ["low", "medium", "high", "urgent", "backlog"].includes(priority as string)) {
+      filter.priority = priority;
+    }
+
+    const tasks = await Task.find(filter)
       .populate("assignedTo", "name email avatarUrl")
       .populate("createdBy", "name email avatarUrl")
       .populate("comments.author", "name email avatarUrl")
@@ -258,6 +271,7 @@ export const getTasksByProject = async (req: Request, res: Response) => {
  * - title: string (optional, must not be empty if provided)
  * - description: string (optional)
  * - status: string (optional, "todo" | "in-progress" | "done")
+ * - priority: string (optional, "low" | "medium" | "high" | "urgent" | "backlog")
  * - assignedTo: string (optional, user ID, must be project member)
  * - dueDate: string | Date (optional, ISO datetime string or Date object)
  *
@@ -294,7 +308,7 @@ export const updateTask = async (req: Request, res: Response) => {
     }
 
     const { taskId } = paramValidation.data;
-    const { title, description, status, assignedTo, dueDate } =
+    const { title, description, status, assignedTo, dueDate, priority } =
       bodyValidation.data;
     const userId = (req as any).user._id;
 
@@ -335,6 +349,7 @@ export const updateTask = async (req: Request, res: Response) => {
     if (title !== undefined) task.title = title;
     if (description !== undefined) task.description = description;
     if (status !== undefined) task.status = status;
+    if (priority !== undefined) task.priority = priority;
     if (dueDate !== undefined) task.dueDate = new Date(dueDate);
 
     if (assignedTo !== undefined) {

@@ -15,6 +15,7 @@ import { z } from "zod";
  * - assignedTo: Optional user ID to assign task to (MongoDB ObjectId)
  * - dueDate: Optional due date (ISO string)
  * - status: Optional task status (todo, in-progress, done)
+ * - priority: Optional task priority (low, medium, high, urgent, backlog)
  */
 export const createTaskSchema = z.object({
   title: z.string().min(1, "Task title is required"),
@@ -23,6 +24,7 @@ export const createTaskSchema = z.object({
   assignedTo: z.string().optional(),
   dueDate: z.string().datetime().optional().or(z.date().optional()),
   status: z.enum(["todo", "in-progress", "done"]).optional(),
+  priority: z.enum(["low", "medium", "high", "urgent", "backlog"]).optional().default("medium"),
 });
 
 /**
@@ -36,6 +38,7 @@ export const updateTaskSchema = z.object({
   status: z.enum(["todo", "in-progress", "done"]).optional(),
   assignedTo: z.string().nullable().optional(),
   dueDate: z.string().datetime().optional().or(z.date().optional()),
+  priority: z.enum(["low", "medium", "high", "urgent", "backlog"]).optional(),
 });
 
 /**
