@@ -81,6 +81,10 @@ export interface Task {
   planMarkdown?: string;
   planGeneratedAt?: string;
   planDuration?: number;
+  executionStatus?: "idle" | "running" | "pr_opened" | "failed" | "cancelled";
+  prUrl?: string;
+  executionLog?: string;
+  executionStartedAt?: string;
 }
 
 export interface AuthResponse {
@@ -469,6 +473,38 @@ export const api = createApi({
         "Projects",
       ],
     }),
+
+    // AI Plan execution
+    getRepoBranches: build.query<
+      { branches: string[]; defaultBranch: string },
+      string
+    >({
+      query: (taskId) => `task/${taskId}/repo-branches`,
+    }),
+
+    executeTaskPlan: build.mutation<
+      { message: string },
+      { taskId: string; baseBranch?: string }
+    >({
+      query: ({ taskId, baseBranch }) => ({
+        url: `task/${taskId}/execute-plan`,
+        method: "POST",
+        body: baseBranch ? { baseBranch } : {},
+      }),
+      invalidatesTags: (_result, _error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+      ],
+    }),
+
+    cancelTaskExecution: build.mutation<{ message: string }, { taskId: string }>({
+      query: ({ taskId }) => ({
+        url: `task/${taskId}/cancel-execution`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, { taskId }) => [
+        { type: "Tasks", id: taskId },
+      ],
+    }),
   }),
 });
 
@@ -511,4 +547,8 @@ export const {
   useConfirmAttachmentUploadMutation,
   useDeleteTaskAttachmentMutation,
   useGenerateTaskPlanMutation,
+  useGetRepoBranchesQuery,
+  useLazyGetRepoBranchesQuery,
+  useExecuteTaskPlanMutation,
+  useCancelTaskExecutionMutation,
 } = api;

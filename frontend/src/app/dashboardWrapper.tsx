@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import AuthProvider from "./authProvider";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useAppSelector } from "./redux";
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
@@ -16,7 +17,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     } else {
       document.documentElement.classList.remove("dark");
     }
-  });
+  }, [isDarkMode]);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
@@ -28,7 +29,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       >
         <Navbar />
         <main className="flex-1 overflow-y-auto bg-background">
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
     </div>
