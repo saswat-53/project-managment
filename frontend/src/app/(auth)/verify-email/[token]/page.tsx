@@ -22,7 +22,7 @@ export default function VerifyEmailPage() {
       called.current = true;
       verifyEmail(token);
     }
-  }, []);
+  }, [token, verifyEmail]);
 
   useEffect(() => {
     if (isSuccess) {

@@ -1,6 +1,7 @@
 "use client";
 
 import Modal from "@/components/Modal";
+import Image from "next/image";
 import {
   useGetWorkspaceMembersQuery,
   useGetProjectByIdQuery,
@@ -111,10 +112,13 @@ const ModalAddMember = ({ isOpen, onClose, projectId, canManage }: Props) => {
                   >
                     <div className="flex items-center gap-2">
                       {avatar ? (
-                        <img
+                        <Image
                           src={avatar}
                           alt={name}
+                          width={32}
+                          height={32}
                           className="h-8 w-8 rounded-full object-cover"
+                          unoptimized
                         />
                       ) : (
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-zinc-950">
@@ -169,10 +173,13 @@ const ModalAddMember = ({ isOpen, onClose, projectId, canManage }: Props) => {
                   />
                   <div className="flex items-center gap-2">
                     {member.avatarUrl ? (
-                      <img
+                      <Image
                         src={member.avatarUrl}
                         alt={member.name}
+                        width={32}
+                        height={32}
                         className="h-8 w-8 rounded-full object-cover"
+                        unoptimized
                       />
                     ) : (
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-zinc-950">

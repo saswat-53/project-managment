@@ -21,7 +21,8 @@ const ModalEditProject = ({ isOpen, onClose, project }: Props) => {
   const [showTokenField, setShowTokenField] = useState(false);
   const [error, setError] = useState("");
 
-  // Sync form if project prop changes (e.g. cache update)
+  // Intentionally depends only on project._id — resets form when a different
+  // project is opened, not on every field update from the cache.
   useEffect(() => {
     setName(project.name);
     setDescription(project.description ?? "");
@@ -30,7 +31,7 @@ const ModalEditProject = ({ isOpen, onClose, project }: Props) => {
     setGithubToken("");
     setShowTokenField(false);
     setError("");
-  }, [project._id]);
+  }, [project._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -149,3 +149,45 @@ body,
   width: 0px;
   height: 0px;
 }
+
+/* ── Landing page animations ────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(400%); }
+}
+@keyframes pulse-amber {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.anim-fade-up  { animation: fadeUp  0.7s cubic-bezier(.22,1,.36,1) both; }
+.anim-fade-in  { animation: fadeIn  0.6s ease both; }
+.delay-100 { animation-delay: 0.10s; }
+.delay-200 { animation-delay: 0.20s; }
+.delay-300 { animation-delay: 0.30s; }
+.delay-400 { animation-delay: 0.40s; }
+.delay-500 { animation-delay: 0.50s; }
+.delay-700 { animation-delay: 0.70s; }
+.delay-900 { animation-delay: 0.90s; }
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+.scanline-bar {
+  animation: scanline 3s linear infinite;
+  opacity: 0.06;
+}
+.amber-pulse { animation: pulse-amber 2.5s ease-in-out infinite; }
