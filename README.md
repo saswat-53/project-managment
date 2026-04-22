@@ -18,6 +18,7 @@ A full-stack project management application with real-time updates, role-based a
 - **Task Comments & Replies** — Threaded 2-level comment system with inline edit, reply toggle, and permission-based delete
 - **File Attachments (Cloudflare R2)** — Upload files directly to R2 via presigned URLs; attachments stored per-task with metadata
 - **AI Task Plan Generation** — DeepSeek-powered two-pass LLM that reads your linked GitHub repo, selects relevant files, and generates a structured `plan.md` per task; cached on the task and re-generatable on demand
+- **AI Agent Executor** — Autonomous agent that reads the generated plan, fetches relevant files from your GitHub repo, rewrites each file via DeepSeek, commits the changes to a feature branch, and opens a pull request — all from a single "Execute Plan" button; humans review the PR before anything merges
 
 ### Project Views
 | View | Description |
@@ -80,7 +81,7 @@ project-managment/
 │   ├── models/          # Mongoose schemas (User, Workspace, Project, Task, WorkspaceMember, InviteToken)
 │   ├── routes/          # Express routers
 │   ├── middlewares/     # JWT auth middleware
-│   ├── utils/           # Email service, JWT helpers, workspace role helper, R2 client
+│   ├── utils/           # Email service, JWT helpers, workspace role helper, R2 client, agentExecutor
 │   ├── validators/      # Zod validation schemas
 │   ├── jobs/            # node-cron background jobs (daily task digest)
 │   ├── socket.ts        # Socket.IO event setup
@@ -208,6 +209,7 @@ http://localhost:5000/api-docs
 | Attachments | `/api/task/:id/attachments` | Get presigned upload URL, delete attachment |
 | Comments | `/api/task/:id/comments` | Add/edit/delete comment, add/delete reply |
 | AI Plan | `/api/task/:id/generate-plan` | Generate / regenerate DeepSeek plan for a task |
+| AI Agent | `/api/task/:id/execute-plan` | Execute the plan autonomously and open a GitHub PR |
 | Health | `/health` | Server + DB liveness check |
 
 **Auth**: All protected routes use HTTP-only cookie-based JWT. Include `credentials: "include"` in all API requests.
@@ -249,12 +251,12 @@ Emails are sent via the [Resend](https://resend.com) API for:
 | `R2_SECRET_ACCESS_KEY` | Yes* | R2 API token secret |
 | `R2_BUCKET_NAME` | Yes* | R2 bucket name |
 | `R2_PUBLIC_URL` | Yes* | Public R2 domain (e.g. `https://pub-xxxx.r2.dev`) |
-| `DEEPSEEK_API_KEY` | Yes** | DeepSeek API key for AI plan generation |
+| `DEEPSEEK_API_KEY` | Yes** | DeepSeek API key for AI plan generation and agent execution |
 | `GITHUB_TOKEN` | Yes** | GitHub PAT with `repo` scope (server-level fallback; per-project tokens take priority) |
 | `ENCRYPTION_KEY` | Yes** | 64 hex chars (32 bytes) — encrypts per-project GitHub PATs at rest |
 
 *Required only if using file attachments. Omit to disable the feature.
-**Required only if using AI plan generation. Omit to disable the feature.
+**Required only if using AI plan generation or agent execution. Omit to disable the feature. The agent executor reuses the same `DEEPSEEK_API_KEY` and `GITHUB_TOKEN`/per-project PAT — no additional env vars needed.
 
 ### Frontend
 
@@ -279,6 +281,8 @@ Emails are sent via the [Resend](https://resend.com) API for:
 **Embedded Comments Subdocument** — Task comments are stored as an embedded array inside the Task document (not a separate collection). This keeps reads fast (no joins) and works well given the bounded size of comment threads per task.
 
 **Two-Pass AI Plan Generation** — Plan generation runs two sequential DeepSeek calls: the first selects only the relevant files from the repo tree (avoiding token limits), the second generates the structured `plan.md` using just those files' contents. The result is cached on the Task document (`planMarkdown`, `planGeneratedAt`) so re-opening the plan tab is instant. An in-memory rate limiter (10 requests/hr/user) protects the DeepSeek API quota without requiring Redis.
+
+**AI Agent Executor (202 Non-Blocking Pattern)** — When "Execute Plan" is clicked, the backend immediately responds with `202 Accepted` (setting `executionStatus: "running"`) and runs the agent asynchronously. The agent: parses file paths from the plan's "Files to change" table, fetches each file from GitHub, rewrites each one individually via DeepSeek (`temperature: 0.1`, up to 8192 tokens), clones the repo to a temp directory, writes the changes, commits to a branch named `agent/<title-slug>-<taskId>`, pushes, and opens a GitHub PR. The frontend learns of completion via the existing Socket.IO `task:updated` event — no polling needed. The temp directory is always cleaned up in a `finally` block even on failure. A 409 guard prevents double-execution if the agent is already running.
 
 ---
 
