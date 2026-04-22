@@ -8,6 +8,7 @@ import {
 import { addComment, deleteComment, editComment, addReply, deleteReply } from "../controllers/comment.controller";
 import { presignAttachmentUpload, confirmAttachmentUpload, deleteAttachment } from "../controllers/attachment.controller";
 import { generateTaskPlan } from "../controllers/aiPlan.controller";
+import { executeTaskPlan, cancelTaskExecution, getRepoBranches } from "../controllers/agentExecutor.controller";
 import { verifyJWT } from "../middlewares/auth";
 
 const router = Router();
@@ -223,8 +224,11 @@ router.put("/:taskId", verifyJWT, updateTask);
  */
 router.delete("/:taskId", verifyJWT, deleteTask);
 
-// AI Plan generation
+// AI Plan generation + execution
 router.post("/:taskId/generate-plan", verifyJWT, generateTaskPlan);
+router.get("/:taskId/repo-branches", verifyJWT, getRepoBranches);
+router.post("/:taskId/execute-plan", verifyJWT, executeTaskPlan);
+router.post("/:taskId/cancel-execution", verifyJWT, cancelTaskExecution);
 
 // Attachments
 router.post("/:taskId/attachments/presign", verifyJWT, presignAttachmentUpload);

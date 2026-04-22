@@ -43,6 +43,10 @@ export interface ITask extends Document {
   planGeneratedAt?: Date;
   planDuration?: number;
   planUrl?: string;
+  executionStatus?: "idle" | "running" | "pr_opened" | "failed" | "cancelled";
+  prUrl?: string;
+  executionLog?: string;
+  executionStartedAt?: Date;
 }
 
 // Reply schema — same shape as a comment but intentionally has no `replies` field
@@ -146,6 +150,23 @@ const taskSchema = new Schema<ITask>(
 
     planUrl: {
       type: String,
+    },
+
+    executionStatus: {
+      type: String,
+      enum: ["idle", "running", "pr_opened", "failed", "cancelled"],
+    },
+
+    prUrl: {
+      type: String,
+    },
+
+    executionLog: {
+      type: String,
+    },
+
+    executionStartedAt: {
+      type: Date,
     },
   },
   { timestamps: true }

@@ -13,6 +13,7 @@ import DashboardWrapper from "@/app/dashboardWrapper";
 import { useGetTasksQuery, useGetCurrentUserQuery, useGetWorkspaceMembersQuery, useGetProjectByIdQuery } from "@/state/api";
 import { useAppSelector } from "@/app/redux";
 import { useProjectSocket } from "@/hooks/useProjectSocket";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Project = () => {
   const { id } = useParams() as { id: string };
@@ -73,6 +74,7 @@ const Project = () => {
         </div>
 
         <div className="flex-1 overflow-hidden">
+          <ErrorBoundary>
           {isLoading && (
             <div className="flex h-full items-center justify-center text-gray-500 dark:text-gray-400">
               Loading...
@@ -121,6 +123,7 @@ const Project = () => {
               )}
             </>
           )}
+          </ErrorBoundary>
         </div>
       </div>
     </DashboardWrapper>

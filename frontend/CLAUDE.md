@@ -851,10 +851,8 @@ useEffect(() => {
   } else {
     document.documentElement.classList.remove("dark");
   }
-});  // No dependency array — runs on every render
+}, [isDarkMode]);
 ```
-
-Note: The `useEffect` has no dependency array, so it runs after every render. This is intentional to keep the HTML class in sync. It is slightly inefficient but harmless.
 
 3. The user toggles dark mode from the Navbar:
 
@@ -997,13 +995,6 @@ These routes exist but show "coming soon" messages:
 - `/teams` — exists in the file system but content is unknown
 
 ### Known Quirks
-
-**ProjectHeader hardcoded title**: `ProjectHeader.tsx` renders a hardcoded heading `"Product Design Development"` instead of the actual project name. It also owns the "Create Project" modal, which is conceptually misplaced (project creation from a project detail header). This needs refactoring.
-
-```tsx
-// ProjectHeader.tsx line ~32 — the heading is hardcoded, not dynamic
-<Header name="Product Design Development" ... />
-```
 
 **Task priority field**: The `Task` interface has no `priority` field. The backend does not support it. The priority pages are stubs for this reason.
 

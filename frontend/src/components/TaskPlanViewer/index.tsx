@@ -6,15 +6,16 @@ import remarkGfm from "remark-gfm";
 import { formatDistanceToNow } from "date-fns";
 import { Download, Loader2, RefreshCw, Wand2, GitBranch, CheckCircle } from "lucide-react";
 import { Task, useGenerateTaskPlanMutation, useUpdateProjectMutation } from "@/state/api";
+import ExecutePlanSection from "./ExecutePlanSection";
 
 type Props = {
   task: Task;
   canModerate: boolean;
 };
 
+
 const NO_REPO_CODE = "NO_REPO_URL";
 const GITHUB_ACCESS_CODE = "GITHUB_ACCESS_DENIED";
-
 const TaskPlanViewer = ({ task, canModerate }: Props) => {
   const [generatePlan, { isLoading }] = useGenerateTaskPlanMutation();
   const [updateProject, { isLoading: isSavingRepo }] = useUpdateProjectMutation();
@@ -221,6 +222,11 @@ const TaskPlanViewer = ({ task, canModerate }: Props) => {
         <div className="rounded border border-red-300 bg-red-50 px-3 py-2 dark:border-red-800 dark:bg-red-950/40">
           <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
         </div>
+      )}
+
+      {/* Execute Plan section — shown when plan exists */}
+      {hasPlan && (
+        <ExecutePlanSection task={task} canModerate={canModerate} />
       )}
 
       {/* Content area */}

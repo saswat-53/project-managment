@@ -5,6 +5,7 @@ import {
   Task,
   useUpdateTaskMutation,
   useGetWorkspaceMembersQuery,
+  useGetTasksQuery,
   useAddTaskCommentMutation,
   useEditTaskCommentMutation,
   useDeleteTaskCommentMutation,
@@ -53,6 +54,17 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
 
   const myRole = members?.find((m) => m._id === currentUser?._id)?.workspaceRole;
   const canModerate = myRole === "admin" || myRole === "manager";
+
+  // Subscribe to the live task from cache so execution-status changes
+  // pushed via WebSocket are reflected immediately (fixes stale-prop bug).
+  const { liveTask } = useGetTasksQuery(
+    { projectId: task.project },
+    {
+      selectFromResult: ({ data }) => ({
+        liveTask: data?.find((t) => t._id === task._id) ?? task,
+      }),
+    },
+  );
 
   const [activeTab, setActiveTab] = useState<Tab>("details");
 
@@ -291,7 +303,7 @@ const ModalEditTask = ({ isOpen, onClose, task }: Props) => {
 
       {/* Plan tab */}
       {activeTab === "plan" && (
-        <TaskPlanViewer task={task} canModerate={canModerate} />
+        <TaskPlanViewer task={liveTask} canModerate={canModerate} />
       )}
 
       {/* Files tab */}

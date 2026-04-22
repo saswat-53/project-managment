@@ -108,7 +108,7 @@ export const createProject = async (req: Request, res: Response) => {
       name,
       description,
       repoUrl: repoUrl || undefined,
-      githubToken: githubToken ? encrypt(githubToken) : undefined,
+      githubToken: githubToken ? encrypt(githubToken.replace(/['"]/g, "").trim()) : undefined,
       workspace: new mongoose.Types.ObjectId(workspaceId),
       members: memberObjectIds,
       status: status || "backlog",

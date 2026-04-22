@@ -1,13 +1,17 @@
 "use client";
 
 import Header from "@/components/Header";
-import { useGetCurrentUserQuery, useChangePasswordMutation, useSendVerificationEmailMutation, useUpdateUserDetailMutation } from "@/state/api";
+import { useGetCurrentUserQuery, useGetWorkspacesQuery, useChangePasswordMutation, useSendVerificationEmailMutation, useUpdateUserDetailMutation } from "@/state/api";
 import { CheckCircle, XCircle, Eye, EyeOff, Pencil, Check, X } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import { useAppSelector } from "@/app/redux";
 
 const Settings = () => {
   const { data: user, isLoading } = useGetCurrentUserQuery();
+  const activeWorkspaceId = useAppSelector((state) => state.global.activeWorkspaceId);
+  const { data: workspaces } = useGetWorkspacesQuery();
+  const myWorkspaceRole = workspaces?.find((w) => w._id === activeWorkspaceId)?.myRole;
   const [changePassword, { isLoading: isChanging }] = useChangePasswordMutation();
   const [sendVerificationEmail, { isLoading: isSending }] = useSendVerificationEmailMutation();
   const [updateUserDetail, { isLoading: isUpdating }] = useUpdateUserDetailMutation();
@@ -102,7 +106,9 @@ const Settings = () => {
         )}
         <div>
           <p className="font-semibold dark:text-white">{user.name}</p>
-          <p className="text-sm capitalize text-gray-500 dark:text-gray-400">{user.role}</p>
+          {myWorkspaceRole && (
+            <p className="text-sm capitalize text-gray-500 dark:text-gray-400">{myWorkspaceRole}</p>
+          )}
         </div>
       </div>
 
