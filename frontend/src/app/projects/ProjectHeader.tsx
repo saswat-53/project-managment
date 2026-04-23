@@ -24,9 +24,11 @@ type Props = {
   projectId?: string;
   canManage?: boolean;
   project?: Project;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
 };
 
-const ProjectHeader = ({ activeTab, setActiveTab, onAddMember, projectId, canManage, project }: Props) => {
+const ProjectHeader = ({ activeTab, setActiveTab, onAddMember, projectId, canManage, project, searchQuery = "", onSearchChange }: Props) => {
   const router = useRouter();
   const [isModalNewProjectOpen, setIsModalNewProjectOpen] = useState(false);
   const [isModalEditProjectOpen, setIsModalEditProjectOpen] = useState(false);
@@ -168,6 +170,8 @@ const ProjectHeader = ({ activeTab, setActiveTab, onAddMember, projectId, canMan
               type="text"
               placeholder="Search Task"
               className="rounded-md border py-1 pl-10 pr-4 focus:outline-none dark:border-dark-secondary dark:bg-dark-secondary dark:text-white"
+              value={searchQuery}
+              onChange={(e) => onSearchChange?.(e.target.value)}
             />
             <Grid3x3 className="absolute left-3 top-2 h-4 w-4 text-gray-400 dark:text-neutral-500" />
           </div>

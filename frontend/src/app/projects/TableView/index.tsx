@@ -14,14 +14,24 @@ type Props = {
   setIsModalNewTaskOpen: (isOpen: boolean) => void;
   canManage?: boolean;
   currentUserId?: string;
+  searchQuery?: string;
 };
 
-const TableView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Props) => {
+const TableView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId, searchQuery = "" }: Props) => {
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
   const { data: tasks } = useGetTasksQuery({ projectId: id });
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleteTask, { isLoading: isDeleting }] = useDeleteTaskMutation();
+
+  const filteredTasks = tasks?.filter(task => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      task.title.toLowerCase().includes(query) ||
+      (task.description?.toLowerCase() || '').includes(query)
+    );
+  }) || [];
 
   const columns: GridColDef[] = [
     { field: "title", headerName: "Title", width: 150 },
@@ -127,7 +137,7 @@ const TableView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Prop
       </div>
       <div className="flex-1 min-h-0">
         <DataGrid
-          rows={tasks || []}
+          rows={filteredTasks}
           columns={columns}
           getRowId={(row) => row._id}
           className={dataGridClassNames}
