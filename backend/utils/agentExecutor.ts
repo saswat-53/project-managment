@@ -202,7 +202,7 @@ export async function runPlanAgent(
     const implementFile = async (file: { path: string; content: string }): Promise<string> => {
       const userPrompt = buildSingleFilePrompt(task, file);
       const response = await deepseek.chat.completions.create({
-        model: "deepseek-chat",
+        model: "deepseek-v4-flash",
         messages: [
           { role: "system", content: EXECUTOR_SYSTEM },
           { role: "user", content: userPrompt },

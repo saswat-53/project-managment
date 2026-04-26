@@ -114,7 +114,7 @@ export async function selectRelevantFiles(
       : FILE_SELECTION_SYSTEM;
 
     const response = await deepseek.chat.completions.create({
-      model: "deepseek-chat",
+      model: "deepseek-v4-flash",
       messages: [
         { role: "system", content: system },
         { role: "user", content: userPrompt },
@@ -154,7 +154,7 @@ export async function generatePlanMarkdown(
   memberName: string
 ): Promise<string> {
   const response = await deepseek.chat.completions.create({
-    model: "deepseek-chat",
+    model: "deepseek-v4-flash",
     messages: [
       { role: "system", content: PLAN_GENERATION_SYSTEM },
       { role: "user", content: buildPlanPrompt(task, project, files, memberName) },
