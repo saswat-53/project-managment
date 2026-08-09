@@ -21,6 +21,7 @@ const Project = () => {
   const [activeTab, setActiveTab] = useState("Board");
   const [isModalNewTaskOpen, setIsModalNewTaskOpen] = useState(false);
   const [isModalAddMemberOpen, setIsModalAddMemberOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const activeWorkspaceId = useAppSelector((state) => state.global.activeWorkspaceId);
   const { data: currentUser } = useGetCurrentUserQuery();
@@ -70,6 +71,8 @@ const Project = () => {
             projectId={id}
             canManage={canManage}
             project={project}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
           />
         </div>
 
@@ -100,6 +103,7 @@ const Project = () => {
                   setIsModalNewTaskOpen={setIsModalNewTaskOpen}
                   canManage={canManage}
                   currentUserId={currentUser?._id}
+                  searchQuery={searchQuery}
                 />
               )}
               {activeTab === "List" && (
@@ -108,10 +112,15 @@ const Project = () => {
                   setIsModalNewTaskOpen={setIsModalNewTaskOpen}
                   canManage={canManage}
                   currentUserId={currentUser?._id}
+                  searchQuery={searchQuery}
                 />
               )}
               {activeTab === "Timeline" && (
-                <Timeline id={id} setIsModalNewTaskOpen={setIsModalNewTaskOpen} />
+                <Timeline 
+                  id={id} 
+                  setIsModalNewTaskOpen={setIsModalNewTaskOpen}
+                  searchQuery={searchQuery}
+                />
               )}
               {activeTab === "Table" && (
                 <Table
@@ -119,6 +128,7 @@ const Project = () => {
                   setIsModalNewTaskOpen={setIsModalNewTaskOpen}
                   canManage={canManage}
                   currentUserId={currentUser?._id}
+                  searchQuery={searchQuery}
                 />
               )}
             </>

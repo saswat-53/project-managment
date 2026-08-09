@@ -13,6 +13,7 @@ type BoardProps = {
   setIsModalNewTaskOpen: (isOpen: boolean) => void;
   canManage?: boolean;
   currentUserId?: string;
+  searchQuery?: string;
 };
 
 const taskStatus = [
@@ -21,9 +22,24 @@ const taskStatus = [
   { key: "done", label: "Done" },
 ];
 
-const BoardView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: BoardProps) => {
+const BoardView = ({ 
+  id, 
+  setIsModalNewTaskOpen, 
+  canManage, 
+  currentUserId,
+  searchQuery = "" 
+}: BoardProps) => {
   const { data: tasks } = useGetTasksQuery({ projectId: id });
   const [updateTaskStatus] = useUpdateTaskStatusMutation();
+
+  const filteredTasks = tasks?.filter(task => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      task.title.toLowerCase().includes(query) ||
+      (task.description?.toLowerCase() || '').includes(query)
+    );
+  }) || [];
 
   const moveTask = (taskId: string, toStatus: string) => {
     updateTaskStatus({ taskId, status: toStatus, projectId: id });
@@ -37,7 +53,7 @@ const BoardView = ({ id, setIsModalNewTaskOpen, canManage, currentUserId }: Boar
             key={key}
             statusKey={key}
             statusLabel={label}
-            tasks={tasks || []}
+            tasks={filteredTasks}
             moveTask={moveTask}
             setIsModalNewTaskOpen={setIsModalNewTaskOpen}
             canManage={canManage}

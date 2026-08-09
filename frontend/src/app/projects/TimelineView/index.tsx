@@ -8,6 +8,7 @@ import React, { useMemo, useState } from "react";
 type Props = {
   id: string;
   setIsModalNewTaskOpen: (isOpen: boolean) => void;
+  searchQuery?: string;
 };
 
 type TaskTypeItems = "task" | "milestone" | "project";
@@ -26,7 +27,11 @@ const addDays = (date: Date, days: number) => {
   return d;
 };
 
-const Timeline = ({ id, setIsModalNewTaskOpen }: Props) => {
+const Timeline = ({ 
+  id, 
+  setIsModalNewTaskOpen,
+  searchQuery = "" 
+}: Props) => {
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
   const { data: tasks } = useGetTasksQuery({ projectId: id });
 
@@ -35,10 +40,19 @@ const Timeline = ({ id, setIsModalNewTaskOpen }: Props) => {
     locale: "en-US",
   });
 
-  const ganttTasks = useMemo(() => {
-    if (!tasks?.length) return [];
+  const filteredTasks = tasks?.filter(task => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      task.title.toLowerCase().includes(query) ||
+      (task.description?.toLowerCase() || '').includes(query)
+    );
+  }) || [];
 
-    return tasks.map((task) => {
+  const ganttTasks = useMemo(() => {
+    if (!filteredTasks?.length) return [];
+
+    return filteredTasks.map((task) => {
       const colors = STATUS_COLORS[task.status ?? ""] ?? DEFAULT_COLOR;
 
       let end: Date;
@@ -71,7 +85,7 @@ const Timeline = ({ id, setIsModalNewTaskOpen }: Props) => {
         },
       };
     });
-  }, [tasks, isDarkMode]);
+  }, [filteredTasks, isDarkMode]);
 
   const handleViewModeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setDisplayOptions((prev) => ({
@@ -87,7 +101,7 @@ const Timeline = ({ id, setIsModalNewTaskOpen }: Props) => {
         <div>
           <h1 className="text-lg font-bold dark:text-white">Timeline</h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {(tasks ?? []).length} task{(tasks ?? []).length !== 1 ? "s" : ""}
+            {(filteredTasks ?? []).length} task{(filteredTasks ?? []).length !== 1 ? "s" : ""}
           </p>
         </div>
 
@@ -118,7 +132,7 @@ const Timeline = ({ id, setIsModalNewTaskOpen }: Props) => {
         </div>
       </div>
 
-      {ganttTasks.length === 0 ? (
+      {filteredTasks.length === 0 ? (
         <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
           <p className="text-gray-400 dark:text-gray-500">No tasks to display</p>
           <button
